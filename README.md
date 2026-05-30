@@ -315,13 +315,13 @@ scanops scan ./your-code-directory/
 
 | 이름 | 역할 | 담당 |
 |------|------|------|
-| 팀원 A | PM / Backend | Spring Boot 스캔 파이프라인, ZAP 연동, AI 라우터 |
-| 팀원 B | Frontend | React FSD 아키텍처, 리포트 UI, 차트 시각화 |
-| 팀원 C | AI / Model | RAG 파이프라인, QLoRA 파인튜닝, CVE 데이터 전처리 |
-| 팀원 D | Infra / DevOps | Docker Compose, Railway·Vercel 배포, DVWA 환경 구성 |
+| 김세한 | Frontend, AI Model |  React FSD 아키텍처, 리포트 UI, 차트 시각화, AI 모델 구현 |
+| 전혜은 | Backend | Spring Boot 스캔 파이프라인, ZAP 연동 |
+| 이경윤 | AI / Model, 보안| Neo4J RAG 파이프라인, QLoRA 파인튜닝, CVE 데이터 전처리 |
+| 최효석 | UI/UX 점검, 마케팅 | Figma, UX 점검 |
 
-> 연락처: 추후 기재 예정
-
+> 연락처
+      팀장 김세한 : 010-7722-3694      
 ---
 
 ## 7. 해커톤 참여 후기
