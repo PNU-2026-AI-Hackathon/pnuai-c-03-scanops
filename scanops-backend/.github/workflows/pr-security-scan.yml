@@ -1,0 +1,35 @@
+name: ScanOps Security Scan
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 사용 방법 (다른 레포에 복사해서 사용):
+#
+# 1. 이 파일을 .github/workflows/scanops-security.yml 로 저장
+#
+# 2. GitHub 레포 Settings > Secrets and variables > Actions 에서 시크릿 등록:
+#    - SCANOPS_API_URL : ScanOps 백엔드 URL (예: https://xxx.up.railway.app)
+#    - SCANOPS_API_KEY : ScanOps API 키 (랜덤 문자열, 백엔드와 동일하게 설정)
+#
+# 3. main 브랜치로 PR을 올리면 자동 실행됩니다.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  security-scan:
+    name: ScanOps 보안 취약점 분석
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write   # PR 리뷰 댓글 작성
+      contents: read         # 코드 읽기
+
+    steps:
+      - name: ScanOps PR Security Scan
+        uses: 26Graduation/scanops-backend/.github/actions/pr-security-scan@main
+        with:
+          api-url: ${{ secrets.SCANOPS_API_URL }}
+          api-key: ${{ secrets.SCANOPS_API_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fail-on-high: 'false'   # true로 바꾸면 HIGH 이상 취약점 발견 시 CI 실패
