@@ -105,12 +105,15 @@ SYSTEM_FT   = (
 )
 
 OUTPUT_FORMAT = """\
-Respond in EXACTLY this format (no other text):
+List ALL security vulnerabilities found in the code. Report EACH vulnerability instance separately, even if the same vulnerability type appears multiple times in different locations.
+
+For EACH vulnerability, use EXACTLY this format, separated by ---:
 VULNERABILITY: [vulnerability name with CWE ID]
 SEVERITY: [CRITICAL/HIGH/MEDIUM/LOW]
 CVSS: [CVSS base score, e.g. 9.8]
 ATTACK: [한 문장으로 공격 시나리오 설명 (반드시 한국어)]
-FIX: [수정된 코드. 코드가 없으면 한국어로 해결 방법 설명]"""
+FIX: [수정된 코드. 코드가 없으면 한국어로 해결 방법 설명]
+---"""
 
 
 def _cve_block(cves: list[dict]) -> str:

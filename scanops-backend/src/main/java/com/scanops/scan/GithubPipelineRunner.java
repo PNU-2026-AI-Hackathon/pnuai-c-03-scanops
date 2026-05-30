@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -44,23 +45,24 @@ public class GithubPipelineRunner {
         Map.entry("xxe",                    List.of("DocumentBuilder", "XMLReader", "SAXParser", "parseXML"))
     );
 
-    /** 코드에서 취약 라인 번호 탐색 (1-indexed, 못 찾으면 0) */
-    private int findVulnLine(String code, String vulnType) {
-        if (code == null || code.isBlank() || vulnType == null) return 0;
+    /** 코드에서 취약 라인 번호 목록 탐색 (1-indexed, 없으면 빈 리스트) */
+    private List<Integer> findVulnLines(String code, String vulnType) {
+        List<Integer> found = new ArrayList<>();
+        if (code == null || code.isBlank() || vulnType == null) return found;
         String key = vulnType.toLowerCase();
         List<String> keywords = VULN_KEYWORDS.entrySet().stream()
                 .filter(e -> key.contains(e.getKey()))
                 .flatMap(e -> e.getValue().stream())
                 .toList();
-        if (keywords.isEmpty()) return 0;
+        if (keywords.isEmpty()) return found;
         String[] lines = code.split("\n");
         for (int i = 0; i < lines.length; i++) {
             String lc = lines[i].toLowerCase();
             if (keywords.stream().anyMatch(kw -> lc.contains(kw.toLowerCase()))) {
-                return i + 1;
+                found.add(i + 1);
             }
         }
-        return 0;
+        return found;
     }
 
     @Async
@@ -85,26 +87,43 @@ public class GithubPipelineRunner {
                             .reduce((a, b) -> a + ", " + b)
                             .orElse("");
 
-                // 줄번호 탐색
-                int lineNum = findVulnLine(
+                // 취약 라인 목록 탐색 — 같은 유형이 여러 줄에 있으면 각각 저장
+                List<Integer> lineNums = findVulnLines(
                         fileContents.getOrDefault(r.file_path(), ""),
                         r.vulnerability()
                 );
 
-                Vulnerability vuln = Vulnerability.builder()
-                        .jobId(job.getId())
-                        .vulnType(r.vulnerability())
-                        .riskLevel(mapRiskLevel(r.severity()))
-                        .description("파일: " + r.file_path()
-                                + (lineNum > 0 ? "\n줄번호: " + lineNum : "")
-                                + "\n공격: " + r.attack()
-                                + (cveDesc.isEmpty() ? "" : "\n관련 CVE: " + cveDesc))
-                        .solution(r.fix())
-                        .url(job.getTargetUrl() + "/blob/HEAD/" + r.file_path())
-                        .aiModel(AiModel.CUSTOM)
-                        .build();
-
-                vulnerabilityService.save(vuln);
+                if (lineNums.isEmpty()) {
+                    // 라인을 못 찾은 경우 1개만 저장
+                    Vulnerability vuln = Vulnerability.builder()
+                            .jobId(job.getId())
+                            .vulnType(r.vulnerability())
+                            .riskLevel(mapRiskLevel(r.severity()))
+                            .description("파일: " + r.file_path()
+                                    + "\n공격: " + r.attack()
+                                    + (cveDesc.isEmpty() ? "" : "\n관련 CVE: " + cveDesc))
+                            .solution(r.fix())
+                            .url(job.getTargetUrl() + "/blob/HEAD/" + r.file_path())
+                            .aiModel(AiModel.CUSTOM)
+                            .build();
+                    vulnerabilityService.save(vuln);
+                } else {
+                    for (int lineNum : lineNums) {
+                        Vulnerability vuln = Vulnerability.builder()
+                                .jobId(job.getId())
+                                .vulnType(r.vulnerability())
+                                .riskLevel(mapRiskLevel(r.severity()))
+                                .description("파일: " + r.file_path()
+                                        + "\n줄번호: " + lineNum
+                                        + "\n공격: " + r.attack()
+                                        + (cveDesc.isEmpty() ? "" : "\n관련 CVE: " + cveDesc))
+                                .solution(r.fix())
+                                .url(job.getTargetUrl() + "/blob/HEAD/" + r.file_path() + "#L" + lineNum)
+                                .aiModel(AiModel.CUSTOM)
+                                .build();
+                        vulnerabilityService.save(vuln);
+                    }
+                }
             }
 
             job.setStatus(ScanStatus.DONE);
