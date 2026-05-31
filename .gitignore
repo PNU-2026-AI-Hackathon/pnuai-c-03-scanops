@@ -1,5 +1,11 @@
-.DS_Store
-node_modules/
-*.log
+.gradle/
+build/
+*.class
+# 빌드 산출물 jar만 제외 (gradle-wrapper.jar는 포함)
+build/**/*.jar
+!gradle/wrapper/gradle-wrapper.jar
 .env
-*.private-key.pem
+.env.local
+*.log
+.DS_Store
+HELP.md

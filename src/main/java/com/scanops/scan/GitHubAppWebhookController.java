@@ -40,12 +40,7 @@ public class GitHubAppWebhookController {
     @Value("${github.webhook.secret:}")
     private String webhookSecret;
 
-    @Value("${scanops.model.url:http://localhost:8100}")
-    private String modelUrl;
-
-    @Value("${scanops.api-key:}")
-    private String scanopsApiKey;
-
+    private final ScanopsModelClient modelClient;
     private final GithubScanService githubScanService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -62,6 +57,7 @@ public class GitHubAppWebhookController {
             @RequestHeader(value = "X-Hub-Signature-256", defaultValue = "") String signature,
             @RequestBody String payload) {
 
+        // 서명 검증
         if (!webhookSecret.isBlank() && !verifySignature(payload, signature)) {
             log.warn("[Webhook] 서명 검증 실패");
             return ResponseEntity.status(401).body("Invalid signature");
@@ -72,9 +68,10 @@ public class GitHubAppWebhookController {
         }
 
         try {
-            JsonNode root = objectMapper.readTree(payload);
-            String action = root.path("action").asText();
+            JsonNode root   = objectMapper.readTree(payload);
+            String action   = root.path("action").asText();
 
+            // opened / synchronize / reopened 만 처리
             if (!Set.of("opened", "synchronize", "reopened").contains(action)) {
                 return ResponseEntity.ok("ignored action: " + action);
             }
@@ -83,13 +80,11 @@ public class GitHubAppWebhookController {
             int    prNumber       = root.path("number").asInt();
             String repoFullName   = root.path("repository").path("full_name").asText();
             String headSha        = root.path("pull_request").path("head").path("sha").asText();
-            String headRepoFullName = root.path("pull_request").path("head").path("repo").path("full_name").asText();
-            if (headRepoFullName.isBlank()) headRepoFullName = repoFullName;
 
             log.info("[Webhook] PR #{} repo={} action={}", prNumber, repoFullName, action);
 
-            final String finalHeadRepo = headRepoFullName;
-            new Thread(() -> processPr(installationId, repoFullName, finalHeadRepo, prNumber, headSha)).start();
+            // 비동기 처리 (webhook 응답은 즉시 반환)
+            new Thread(() -> processPr(installationId, repoFullName, prNumber, headSha)).start();
 
         } catch (Exception e) {
             log.error("[Webhook] 파싱 오류: {}", e.getMessage());
@@ -100,14 +95,7 @@ public class GitHubAppWebhookController {
 
     // ── PR 처리 ───────────────────────────────────────────────────────────────
 
-    private void processPr(long installationId, String repo, String headRepo, int prNumber, String headSha) {
-        String[] parts    = repo.split("/", 2);
-        String owner      = parts[0];
-        String repoName   = parts[1];
-        String[] headParts  = headRepo.split("/", 2);
-        String headOwner    = headParts[0];
-        String headRepoName = headParts[1];
-
+    private void processPr(long installationId, String repo, int prNumber, String headSha) {
         try {
             String token = getInstallationToken(installationId);
             if (token == null) { log.error("[Webhook] 토큰 발급 실패"); return; }
@@ -119,11 +107,12 @@ public class GitHubAppWebhookController {
                     .defaultHeader("X-GitHub-Api-Version", "2022-11-28")
                     .build();
 
-            // 1. 분석 시작 알림 (Commit Status: pending)
-            postCommitStatus(gh, headOwner, headRepoName, headSha, "pending",
-                    "ScanOps 보안 분석 중...", "scanops/security");
+            // owner/repo 분리 (슬래시 URL 인코딩 방지)
+            String[] parts = repo.split("/", 2);
+            String owner = parts[0];
+            String repoName = parts[1];
 
-            // 2. PR 변경 파일 목록
+            // 변경 파일 목록
             JsonNode filesNode = gh.get()
                     .uri("/repos/{owner}/{repo}/pulls/{pr}/files?per_page=50", owner, repoName, prNumber)
                     .retrieve()
@@ -131,22 +120,30 @@ public class GitHubAppWebhookController {
                     .block();
 
             if (filesNode == null || !filesNode.isArray()) {
-                log.warn("[Webhook] PR 파일 목록 없음");
-                postCommitStatus(gh, headOwner, headRepoName, headSha, "failure", "파일 목록 조회 실패", "scanops/security");
+                log.warn("[Webhook] PR 파일 목록 없음 또는 배열 아님: {}", filesNode);
                 return;
             }
 
-            // 3. 파일 내용 + patch 수집
-            List<Map<String, Object>> prFiles = new ArrayList<>();
-            filesNode.forEach(f -> {
+            List<JsonNode> changedFiles = new ArrayList<>();
+            filesNode.forEach(changedFiles::add);
+
+            if (changedFiles == null || changedFiles.isEmpty()) return;
+
+            // 분석 대상 필터
+            List<ScanopsModelClient.AnalyzeRequest> requests = new ArrayList<>();
+            Map<String, String> patchMap = new HashMap<>();
+
+            for (JsonNode f : changedFiles) {
                 String filename = f.path("filename").asText();
                 String status   = f.path("status").asText();
-                if ("removed".equals(status)) return;
+                if ("removed".equals(status)) continue;
 
                 String ext = filename.contains(".")
-                        ? filename.substring(filename.lastIndexOf('.')).toLowerCase() : "";
-                if (!TARGET_EXTS.contains(ext)) return;
+                        ? filename.substring(filename.lastIndexOf('.')).toLowerCase()
+                        : "";
+                if (!TARGET_EXTS.contains(ext)) continue;
 
+                // 파일 내용 가져오기
                 try {
                     String contentB64 = gh.get()
                             .uri("/repos/{owner}/{repo}/contents/{path}?ref={sha}", owner, repoName, filename, headSha)
@@ -159,137 +156,79 @@ public class GitHubAppWebhookController {
                     String content = new String(Base64.getDecoder().decode(contentB64), StandardCharsets.UTF_8);
                     if (content.length() > 10000) content = content.substring(0, 10000);
 
-                    Map<String, Object> file = new HashMap<>();
-                    file.put("filename", filename);
-                    file.put("content", content);
-                    file.put("patch", f.path("patch").asText(""));
-                    prFiles.add(file);
+                    String lang = githubScanService.detectLanguage(filename);
+                    if (lang == null) continue;
+
+                    requests.add(new ScanopsModelClient.AnalyzeRequest(lang, content, filename, true));
+                    patchMap.put(filename, f.path("patch").asText(""));
 
                 } catch (Exception e) {
                     log.warn("[Webhook] 파일 읽기 실패: {}", filename);
                 }
-            });
-
-            if (prFiles.isEmpty()) {
-                postCommitStatus(gh, headOwner, headRepoName, headSha, "success", "분석 대상 파일 없음", "scanops/security");
-                return;
             }
 
-            // 4. scanops-model /analyze/pr 호출 (파일당 여러 취약점 타입 반환)
-            WebClient model = WebClient.builder()
-                    .baseUrl(modelUrl)
-                    .defaultHeader("Content-Type", "application/json")
-                    .defaultHeader("X-Scanops-Key", scanopsApiKey)
-                    .build();
+            if (requests.isEmpty()) return;
 
-            Map<String, Object> prScanReq = Map.of(
-                    "repo", repo,
-                    "pr_number", prNumber,
-                    "files", prFiles
-            );
+            // 분석
+            ScanopsModelClient.BatchResult batch = modelClient.analyzeBatch(requests);
 
-            JsonNode prScanResp;
-            try {
-                prScanResp = model.post()
-                        .uri("/analyze/pr")
-                        .bodyValue(prScanReq)
-                        .retrieve()
-                        .bodyToMono(JsonNode.class)
-                        .block();
-            } catch (Exception e) {
-                log.error("[Webhook] 모델 API 호출 실패: {}", e.getMessage());
-                postCommitStatus(gh, headOwner, headRepoName, headSha, "failure", "모델 분석 실패", "scanops/security");
-                return;
-            }
-
-            if (prScanResp == null) {
-                postCommitStatus(gh, headOwner, headRepoName, headSha, "failure", "모델 응답 없음", "scanops/security");
-                return;
-            }
-
-            // 5. 결과 처리
-            JsonNode findings = prScanResp.path("findings");
-            int vulnCount = prScanResp.path("vulnerable_count").asInt();
-
-            log.info("[Webhook] PR #{} 분석 완료: 취약점 {}개", prNumber, vulnCount);
-
+            // 취약점 없으면 클린 댓글
+            long vulnCount = batch.results().stream().filter(ScanopsModelClient.AnalyzeResult::detected).count();
             if (vulnCount == 0) {
                 postComment(gh, owner, repoName, prNumber,
-                        "## 🔒 ScanOps 보안 스캔 결과\n\n✅ **취약점이 발견되지 않았습니다.**\n\n" +
-                        "분석 파일: **" + prFiles.size() + "개**\n\n> Powered by [ScanOps](https://github.com/26Graduation)");
-                postCommitStatus(gh, headOwner, headRepoName, headSha, "success", "취약점 없음 ✅", "scanops/security");
+                    "## 🔒 ScanOps 보안 스캔 결과\n\n✅ **취약점이 발견되지 않았습니다.**\n\n" +
+                    "분석 파일: **" + batch.total() + "개**\n\n> Powered by [ScanOps](https://github.com/26Graduation)");
                 return;
             }
 
-            // 6. 요약 테이블 + 인라인 댓글
+            // 요약 + 인라인 댓글
+            List<Map<String, Object>> comments = new ArrayList<>();
             StringBuilder summary = new StringBuilder();
             summary.append("## 🔍 ScanOps 보안 스캔 결과\n\n")
                    .append("> **").append(vulnCount).append("개 취약점 발견** | 분석 파일: ")
-                   .append(prFiles.size()).append("개\n\n")
-                   .append("| 심각도 | 파일 | 취약점 유형 | 위치 |\n|--------|------|------------|------|\n");
+                   .append(batch.total()).append("개\n\n")
+                   .append("| 심각도 | 파일 | 취약점 유형 |\n|--------|------|------------|\n");
 
-            List<Map<String, Object>> reviewComments = new ArrayList<>();
+            for (ScanopsModelClient.AnalyzeResult r : batch.results()) {
+                if (!r.detected()) continue;
 
-            findings.forEach(finding -> {
-                if (!finding.path("detected").asBoolean()) return;
+                String emoji = severityEmoji(r.severity());
+                String cvss  = r.cvss_score() != null ? " (CVSS " + r.cvss_score() + ")" : "";
+                summary.append("| ").append(emoji).append(" **").append(r.severity()).append(cvss)
+                       .append("** | `").append(r.file_path()).append("` | ")
+                       .append(r.vulnerability()).append(" |\n");
 
-                String vuln     = finding.path("vulnerability").asText();
-                String sev      = finding.path("severity").asText("—");
-                String filename = finding.path("filename").asText();
-                String attack   = finding.path("attack").asText("—");
-                String fix      = finding.path("fix").asText("—");
-                double cvss     = finding.path("cvss_score").asDouble(0);
-                int diffLine    = finding.path("diff_line").asInt(0);
+                // 인라인 댓글
+                String patch = patchMap.get(r.file_path());
+                List<Integer> lines = findVulnLines(patch, r.vulnerability());
+                if (lines.isEmpty()) lines = List.of(extractFirstLine(patch));
 
-                String emoji    = severityEmoji(sev);
-                String cvssStr  = cvss > 0 ? " (CVSS " + cvss + ")" : "";
-                String loc      = diffLine > 0 ? diffLine + "번째 줄" : "줄 특정 불가";
+                String cveText = r.cve_references().stream()
+                        .limit(3)
+                        .map(c -> "- `" + c.cve_id() + "` (" + c.severity() + ", " + c.cwe_id() + ")")
+                        .reduce("", (a, b) -> a + "\n" + b);
 
-                summary.append("| ").append(emoji).append(" **").append(sev).append(cvssStr)
-                       .append("** | `").append(filename).append("` | ")
-                       .append(vuln).append(" | ").append(loc).append(" |\n");
-
-                // CVE 목록
-                StringBuilder cveText = new StringBuilder();
-                finding.path("cve_references").forEach(c -> {
-                    String cveId = c.path("cve_id").asText("");
-                    if (!cveId.isBlank() && !"N/A".equals(cveId)) {
-                        cveText.append("- `").append(cveId).append("` (")
-                               .append(c.path("severity").asText()).append(", ")
-                               .append(c.path("cwe_id").asText()).append(")\n");
-                    }
-                });
-
-                String cvssLine = cvss > 0 ? "\n**CVSS Score:** " + cvss : "";
-                String body = "### " + emoji + " [ScanOps] " + vuln + "\n" +
-                              "**파일:** `" + filename + "` | **심각도:** " + sev + cvssLine + "\n" +
-                              "**위치:** " + loc + "\n\n" +
-                              "**공격 시나리오:**\n" + attack + "\n\n" +
-                              "**수정 방법:**\n" + fix +
-                              (cveText.length() > 0 ? "\n\n**관련 CVE:**\n" + cveText : "");
-
-                if (diffLine > 0) {
+                for (int line : lines) {
+                    if (line <= 0) continue;
+                    String body = buildCommentBody(emoji, r, line, cveText);
                     Map<String, Object> comment = new HashMap<>();
-                    comment.put("path", filename);
-                    comment.put("line", diffLine);
+                    comment.put("path", r.file_path());
+                    comment.put("line", line);
                     comment.put("body", body);
                     comment.put("side", "RIGHT");
-                    reviewComments.add(comment);
-                } else {
-                    // 줄 특정 불가 → 일반 댓글
-                    postComment(gh, owner, repoName, prNumber, body);
+                    comments.add(comment);
                 }
-            });
+            }
 
             summary.append("\n> Powered by [ScanOps](https://github.com/26Graduation)");
 
-            // 7. PR Review 제출 (인라인 댓글 + 요약)
+            // PR Review 제출
             try {
                 Map<String, Object> review = new HashMap<>();
                 review.put("commit_id", headSha);
                 review.put("body", summary.toString());
                 review.put("event", "COMMENT");
-                review.put("comments", reviewComments);
+                review.put("comments", comments);
 
                 gh.post()
                   .uri("/repos/{owner}/{repo}/pulls/{pr}/reviews", owner, repoName, prNumber)
@@ -297,69 +236,49 @@ public class GitHubAppWebhookController {
                   .retrieve()
                   .bodyToMono(String.class)
                   .block();
+
             } catch (Exception e) {
-                log.warn("[Webhook] 인라인 댓글 실패, 요약만 일반 댓글로: {}", e.getMessage());
+                // 인라인 실패 시 일반 댓글로 fallback
+                log.warn("[Webhook] 인라인 댓글 실패, 일반 댓글로 대체: {}", e.getMessage());
                 postComment(gh, owner, repoName, prNumber, summary.toString());
             }
 
-            // 8. 완료 상태 업데이트
-            postCommitStatus(gh, headOwner, headRepoName, headSha, "failure",
-                    "취약점 " + vulnCount + "개 발견 🔴", "scanops/security");
+            log.info("[Webhook] PR #{} 스캔 완료: 취약점 {}개", prNumber, vulnCount);
 
         } catch (Exception e) {
             log.error("[Webhook] processPr 오류: {}", e.getMessage(), e);
-            try {
-                String token = getInstallationToken(installationId);
-                if (token != null) {
-                    WebClient gh = WebClient.builder().baseUrl("https://api.github.com")
-                            .defaultHeader("Authorization", "Bearer " + token)
-                            .defaultHeader("Accept", "application/vnd.github+json").build();
-                    postCommitStatus(gh, headOwner, headRepoName, headSha, "failure", "스캔 오류 발생", "scanops/security");
-                }
-            } catch (Exception ignored) {}
-        }
-    }
-
-    // ── Commit Status ─────────────────────────────────────────────────────────
-
-    private void postCommitStatus(WebClient gh, String owner, String repoName,
-                                   String sha, String state, String description, String context) {
-        try {
-            gh.post()
-              .uri("/repos/{owner}/{repo}/statuses/{sha}", owner, repoName, sha)
-              .bodyValue(Map.of(
-                  "state", state,
-                  "description", description,
-                  "context", context
-              ))
-              .retrieve()
-              .bodyToMono(String.class)
-              .block();
-            log.info("[Webhook] Commit Status → {} : {}", state, description);
-        } catch (Exception e) {
-            log.warn("[Webhook] Commit Status 실패: {}", e.getMessage());
         }
     }
 
     // ── GitHub App JWT / 토큰 ─────────────────────────────────────────────────
 
     private String generateJwt() throws Exception {
-        String pem = privateKeyPem.replace("\\n", "\n").replace("\\r", "").trim();
+        // 환경변수에서 \n이 리터럴로 들어온 경우 실제 줄바꿈으로 변환
+        String pem = privateKeyPem
+                .replace("\\n", "\n")
+                .replace("\\r", "")
+                .trim();
+
+        // PEM 헤더/푸터가 없으면 추가
         if (!pem.contains("-----BEGIN")) {
             pem = "-----BEGIN RSA PRIVATE KEY-----\n" + pem + "\n-----END RSA PRIVATE KEY-----";
         }
+
+        log.debug("[Webhook] PEM 첫 줄: {}", pem.split("\n")[0]);
 
         PEMParser parser = new PEMParser(new StringReader(pem));
         Object obj = parser.readObject();
         parser.close();
 
-        if (obj == null) throw new IllegalArgumentException("PEM 파싱 실패");
+        if (obj == null) {
+            throw new IllegalArgumentException("PEM 파싱 실패: obj is null. PEM 형식을 확인하세요.");
+        }
 
         PrivateKey privateKey;
         if (obj instanceof PEMKeyPair keyPair) {
             privateKey = new JcaPEMKeyConverter().getKeyPair(keyPair).getPrivate();
         } else {
-            throw new IllegalArgumentException("Unsupported PEM: " + obj.getClass());
+            throw new IllegalArgumentException("Unsupported PEM object: " + obj.getClass());
         }
 
         Instant now = Instant.now();
@@ -406,6 +325,16 @@ public class GitHubAppWebhookController {
         }
     }
 
+    private String buildCommentBody(String emoji, ScanopsModelClient.AnalyzeResult r, int line, String cveText) {
+        String cvssLine = r.cvss_score() != null ? "\n**CVSS Score:** " + r.cvss_score() : "";
+        return "### " + emoji + " [ScanOps] " + r.vulnerability() + "\n" +
+               "**파일:** `" + r.file_path() + "` | **심각도:** " + r.severity() + cvssLine + "\n" +
+               "**위치:** " + line + "번째 줄 (변경된 코드)\n\n" +
+               "**공격 시나리오:**\n" + r.attack() + "\n\n" +
+               "**수정 방법:**\n" + r.fix() +
+               (cveText.isBlank() ? "" : "\n\n**관련 CVE:**\n" + cveText);
+    }
+
     private String severityEmoji(String sev) {
         if (sev == null) return "⚠️";
         return switch (sev.toUpperCase()) {
@@ -414,6 +343,49 @@ public class GitHubAppWebhookController {
             case "LOW"    -> "🟢";
             default       -> "⚠️";
         };
+    }
+
+    private static final Map<String, List<String>> VULN_KEYWORDS = Map.ofEntries(
+        Map.entry("ssrf",              List.of("fetch(", "axios.get", "webclient", "httpclient", "url(", "open(")),
+        Map.entry("xss",               List.of("innerhtml", "dangerouslysetinnerhtml", "__html", "document.write", "eval(")),
+        Map.entry("cross-site scripting", List.of("innerhtml", "dangerouslysetinnerhtml", "document.write", "eval(")),
+        Map.entry("code injection",    List.of("eval(", "new function(", "settimeout(", "setinterval(")),
+        Map.entry("injection",         List.of("eval(", "new function(")),
+        Map.entry("sql injection",     List.of("select ", "insert ", "update ", "delete ", "executequery")),
+        Map.entry("command injection", List.of("exec(", "spawn(", "os.system", "subprocess")),
+        Map.entry("path traversal",    List.of("readfile", "writefile", "../", "path.join")),
+        Map.entry("hardcoded",         List.of("password", "secret", "api_key", "apikey", "token")),
+        Map.entry("xxe",               List.of("documentbuilder", "xmlreader", "saxparser"))
+    );
+
+    private List<Integer> findVulnLines(String patch, String vulnType) {
+        if (patch == null || patch.isBlank() || vulnType == null) return List.of();
+        String key = vulnType.toLowerCase();
+        List<String> keywords = VULN_KEYWORDS.entrySet().stream()
+                .filter(e -> key.contains(e.getKey()))
+                .flatMap(e -> e.getValue().stream())
+                .toList();
+        if (keywords.isEmpty()) return List.of();
+
+        List<Integer> matched = new ArrayList<>();
+        int lineNum = 0;
+        for (String raw : patch.split("\n")) {
+            var header = java.util.regex.Pattern.compile("@@ -\\d+(?:,\\d+)? \\+(\\d+)").matcher(raw);
+            if (header.find()) { lineNum = Integer.parseInt(header.group(1)) - 1; continue; }
+            if (raw.startsWith("-")) continue;
+            lineNum++;
+            if (raw.startsWith("+")) {
+                String lc = raw.substring(1).toLowerCase();
+                if (keywords.stream().anyMatch(lc::contains)) matched.add(lineNum);
+            }
+        }
+        return matched;
+    }
+
+    private int extractFirstLine(String patch) {
+        if (patch == null) return 0;
+        var m = java.util.regex.Pattern.compile("@@ -\\d+(?:,\\d+)? \\+(\\d+)").matcher(patch);
+        return m.find() ? Integer.parseInt(m.group(1)) : 0;
     }
 
     private boolean verifySignature(String payload, String signature) {
