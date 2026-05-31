@@ -1,4 +1,33 @@
-# scanops-backend
+# ScanOps
+
+PR을 올리면 자동으로 보안 취약점을 분석해주는 GitHub App
+
+[![GitHub App](https://img.shields.io/badge/GitHub%20App-설치하기-238636?logo=github)](https://github.com/apps/scanops-security-scanner)
+
+---
+
+## 빠른 시작 — GitHub App 설치
+
+**[→ 설치 가이드 (단계별)](scanops-backend/docs/INSTALL_GUIDE.md)**
+
+1. [GitHub App 설치 페이지](https://github.com/apps/scanops-security-scanner) 접속
+2. Install → 레포 선택 → Install & Authorize
+3. PR 올리기 → 자동 분석 시작
+
+---
+
+## 프로젝트 구조
+
+| 서비스 | 설명 | 링크 |
+|--------|------|------|
+| `scanops-backend` | Spring Boot 백엔드 (Webhook 수신·분석 오케스트레이션) | [26Graduation/scanops-backend](https://github.com/26Graduation/scanops-backend) |
+| `scanops-model` | 보안 분석 AI 모델 서버 (QLoRA + RAG) | [26Graduation/scanops-model](https://github.com/26Graduation/scanops-model) |
+| `scanops-frontend` | 대시보드 UI | [scanops-frontend.vercel.app](https://scanops-frontend.vercel.app) |
+| `scanops-infra` | ZAP + 인프라 구성 | [26Graduation/scanops-infra](https://github.com/26Graduation/scanops-infra) |
+
+---
+
+## scanops-backend
 
 ScanOps 백엔드 — Spring Boot 3.2 + JPA + WebFlux
 
