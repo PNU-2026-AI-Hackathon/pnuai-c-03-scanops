@@ -6,13 +6,11 @@ PR을 올리면 자동으로 보안 취약점을 분석해주는 GitHub App
 
 ---
 
-## 빠른 시작 — GitHub App 설치
+## GitHub App으로 PR 자동 보안 분석
 
-**[→ 설치 가이드 (단계별)](scanops-backend/docs/INSTALL_GUIDE.md)**
+ScanOps GitHub App을 내 레포에 설치하면, PR을 올릴 때마다 자동으로 보안 취약점 검사가 시작됩니다. XSS, 코드 인젝션, SSRF 같은 취약점이 발견되면 해당 코드 줄에 바로 댓글이 달리고, 뭐가 문제인지 어떻게 고치면 되는지 한국어로 알려줍니다.
 
-1. [GitHub App 설치 페이지](https://github.com/apps/scanops-security-scanner) 접속
-2. Install → 레포 선택 → Install & Authorize
-3. PR 올리기 → 자동 분석 시작
+**[→ GitHub App 설치하기](https://github.com/apps/scanops-security-scanner)** — Install 누르고 레포 선택하면 끝. 그 다음 PR 올리면 자동으로 분석이 시작됩니다.
 
 ---
 

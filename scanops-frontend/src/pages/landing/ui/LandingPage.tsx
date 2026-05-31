@@ -89,6 +89,51 @@ export default function LandingPage() {
         </div>
       </main>
 
+      {/* GitHub App 설치 섹션 */}
+      <section className="py-24 px-6 border-t border-gray-800">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-400/10 border border-purple-400/20 text-purple-400 text-xs font-medium">
+            GitHub App
+          </div>
+          <h2 className="text-3xl font-bold mb-6">
+            PR 올리면{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+              자동으로 분석
+            </span>
+            됩니다
+          </h2>
+          <p className="text-gray-400 text-base leading-relaxed mb-10">
+            ScanOps GitHub App을 내 레포에 설치하면, PR을 올릴 때마다 자동으로 보안 취약점 검사가 시작돼요.
+            XSS, 코드 인젝션, SSRF 같은 취약점이 발견되면 해당 코드 줄에 바로 댓글이 달리고
+            뭐가 문제인지, 어떻게 고치면 되는지 한국어로 알려줍니다.
+            설치는 딱 한 번만 하면 돼요.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+            <a
+              href="https://github.com/apps/scanops-security-scanner"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-8 py-3.5 rounded-lg bg-purple-500 text-white font-semibold text-sm hover:bg-purple-400 transition-colors shadow-lg shadow-purple-500/20"
+            >
+              GitHub App 설치하기 →
+            </a>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+            {[
+              { step: '01', title: 'App 설치', desc: '설치 페이지에서 Install 누르고 레포 선택' },
+              { step: '02', title: 'PR 올리기', desc: '평소처럼 PR 올리면 자동 분석 시작' },
+              { step: '03', title: '결과 확인', desc: '1~2분 후 코드에 취약점 댓글 자동 등록' },
+            ].map((item) => (
+              <div key={item.step} className="p-5 rounded-xl bg-gray-900 border border-gray-800">
+                <div className="text-purple-400 text-xs font-mono mb-2">{item.step}</div>
+                <h3 className="font-semibold text-sm mb-1">{item.title}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <footer className="py-6 text-center text-xs text-gray-600 border-t border-gray-800">
         © 2026 ScanOps · 보안 진단 자동화 솔루션
       </footer>
