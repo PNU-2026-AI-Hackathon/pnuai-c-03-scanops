@@ -83,7 +83,6 @@ public class GitHubAppWebhookController {
             int    prNumber       = root.path("number").asInt();
             String repoFullName   = root.path("repository").path("full_name").asText();
             String headSha        = root.path("pull_request").path("head").path("sha").asText();
-            // Commit Status는 headSha가 실제로 존재하는 head repo에 포스팅해야 함 (fork PR 대응)
             String headRepoFullName = root.path("pull_request").path("head").path("repo").path("full_name").asText();
             if (headRepoFullName.isBlank()) headRepoFullName = repoFullName;
 
@@ -105,9 +104,9 @@ public class GitHubAppWebhookController {
         String[] parts    = repo.split("/", 2);
         String owner      = parts[0];
         String repoName   = parts[1];
-        String[] headParts   = headRepo.split("/", 2);
-        String headOwner     = headParts[0];
-        String headRepoName  = headParts[1];
+        String[] headParts  = headRepo.split("/", 2);
+        String headOwner    = headParts[0];
+        String headRepoName = headParts[1];
 
         try {
             String token = getInstallationToken(installationId);
@@ -218,7 +217,7 @@ public class GitHubAppWebhookController {
                 postComment(gh, owner, repoName, prNumber,
                         "## 🔒 ScanOps 보안 스캔 결과\n\n✅ **취약점이 발견되지 않았습니다.**\n\n" +
                         "분석 파일: **" + prFiles.size() + "개**\n\n> Powered by [ScanOps](https://github.com/26Graduation)");
-                postCommitStatus(gh, headOwner, headRepoName, headSha, "success", "취약점 없음 ✅", "scanops/security");
+                postCommitStatus(gh, headOwner, headRepoName, headSha, "success", "취약점 없음", "scanops/security");
                 return;
             }
 
@@ -304,8 +303,9 @@ public class GitHubAppWebhookController {
             }
 
             // 8. 완료 상태 업데이트
+            // 주의: GitHub statuses API description은 non-BMP 이모지(🔴 등) 거부 → 텍스트만 사용
             postCommitStatus(gh, headOwner, headRepoName, headSha, "failure",
-                    "취약점 " + vulnCount + "개 발견 🔴", "scanops/security");
+                    "취약점 " + vulnCount + "개 발견", "scanops/security");
 
         } catch (Exception e) {
             log.error("[Webhook] processPr 오류: {}", e.getMessage(), e);
