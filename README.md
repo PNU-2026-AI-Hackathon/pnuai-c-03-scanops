@@ -112,12 +112,12 @@ pnuai-c-03-scanops/
 └── README.md
 ```
 
-| 서비스 | 설명 | 원본 레포 |
-|--------|------|-----------|
-| `scanops-frontend` | 대시보드 UI | [26Graduation/scanops-frontend](https://github.com/26Graduation/scanops-frontend) |
-| `scanops-backend` | Spring Boot 백엔드 | [26Graduation/scanops-backend](https://github.com/26Graduation/scanops-backend) |
-| `scanops-model` | AI 모델 서버 (QLoRA + RAG) | [26Graduation/scanops-model](https://github.com/26Graduation/scanops-model) |
-| `scanops-infra` | ZAP + 인프라 구성 | [26Graduation/scanops-infra](https://github.com/26Graduation/scanops-infra) |
+| 서비스 | 설명 |
+|--------|------|
+| `scanops-frontend` | 대시보드 UI |
+| `scanops-backend` | Spring Boot 백엔드 |
+| `scanops-model` | AI 모델 서버 (QLoRA + RAG) |
+| `scanops-infra` | ZAP + 인프라 구성 | 
 
 ### 3.5. AI 도구 활용
 - **설계 단계:** Claude Code로 멀티 레포 아키텍처(레포 분리, 의존성 정리, 해커톤 미러링 워크플로)를 설계·정리했습니다.
