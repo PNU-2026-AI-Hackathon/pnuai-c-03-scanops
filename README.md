@@ -98,7 +98,7 @@ scanops-infra (OWASP ZAP · AWS EC2)              scanops-model (QLoRA+RAG · Ol
 > 📹 시연 영상: `섹션 5` 참고
 
 ### 3.3. 기능명세서
-> 기능명세서 링크(노션/PDF/스프레드시트)를 여기에 추가하세요. — _TODO_
+> 기능명세서 링크(노션/PDF/스프레드시트)를 여기에 추가하세요. — https://lavish-carpet-8f6.notion.site/ScanOps-3730070cb76480ebacf6dc6ee917f99d?pvs=74
 
 ### 3.4. 디렉토리 구조
 본 제출 레포지토리는 4개 서비스 레포를 동일 이름의 서브폴더로 미러링한 모노 구조입니다. 각 레포는 `main` 브랜치 push 시 GitHub Actions로 자동 동기화됩니다.
@@ -156,7 +156,7 @@ cd scanops-frontend && npm install && npm run dev
 ---
 
 ## 5. 소개 및 시연 영상
-> 프로젝트 소개 영상을 교육원 메일(swedu@pusan.ac.kr)로 제출 후 부여받은 YouTube URL을 여기에 추가하세요. — _TODO_
+> 프로젝트 소개 영상을 교육원 메일(swedu@pusan.ac.kr)로 제출 후 부여받은 YouTube URL을 여기에 추가하세요. — 
 
 ---
 
@@ -165,9 +165,12 @@ cd scanops-frontend && npm install && npm run dev
 
 | 이름 | 역할 | 연락처 |
 |------|------|--------|
-| _TODO_ | _TODO_ | _TODO_ |
+| 김세한 | 팀장 | 010-7722-3694 |
+| 전혜은 | 개발 | 010-9155-8528 |
+| 이경윤 | 개발 | 010-2012-9376 |
+| 최효석 | UX/마케팅 | 010-8974-3098 |
 
 ---
 
 ## 7. 해커톤 참여 후기
-> 팀원별 참여 후기를 작성하세요. — _TODO_
+> 팀원별 참여 후기를 작성하세요. — 
