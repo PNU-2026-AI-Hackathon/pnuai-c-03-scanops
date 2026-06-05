@@ -1,8 +1,9 @@
 FROM ghcr.io/zaproxy/zaproxy:stable
 
-# ZAP 메모리 자동 산정 방지 — Railway /proc/meminfo에서 호스트 전체 메모리를 읽어
-# JVM 힙을 64GB로 잡는 문제 수정. ZAP zap.sh 내부 변수로 512MB 강제 지정.
-ENV _ZAP_MEM=512
+# ZAP 메모리 자동 산정 bypass: zap.sh 대신 java 직접 호출로 -Xmx512m 강제
+# DNS rebinding 방지 우회: config.xml 선탑재로 모든 호스트 허용
+RUN mkdir -p /home/zap/.ZAP
+COPY zap-config.xml /home/zap/.ZAP/config.xml
 
 COPY --chmod=755 start-zap.sh /start-zap.sh
 
