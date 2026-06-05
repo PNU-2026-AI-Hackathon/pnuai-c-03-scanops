@@ -1,5 +1,6 @@
 #!/bin/sh
-exec zap.sh -daemon \
+exec zap.sh -Xmx512m \
+  -daemon \
   -host 0.0.0.0 \
   -port ${PORT:-8080} \
   -config api.disablekey=true \
