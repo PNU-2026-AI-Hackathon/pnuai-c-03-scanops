@@ -3,7 +3,6 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile.zap"
 
 [deploy]
-healthcheckPath = "/JSON/core/view/version/"
-healthcheckTimeout = 120
+healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
