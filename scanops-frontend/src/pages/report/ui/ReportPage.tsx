@@ -17,6 +17,7 @@ import { getScan, getVulnerabilities, generateVulnMeta } from '../../../api/scan
 import type { VulnMeta as AiVulnMeta } from '../../../api/scanApi'
 import type { Vulnerability, RiskLevel, Scan } from '../../../types/scan'
 import { getVulnMeta } from './vulnMeta'
+import Logo from '../../../shared/ui/Logo'
 
 // ── constants ──────────────────────────────────────────────────────────────
 
@@ -101,10 +102,10 @@ function SummaryCard({
   icon?: string
 }) {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 flex flex-col gap-1">
+    <div className="bg-white border border-line rounded-xl px-5 py-4 flex flex-col gap-1">
       <div className="flex items-center gap-1.5">
         {icon && <span className="text-sm">{icon}</span>}
-        <span className="text-xs text-gray-500 font-medium">{label}</span>
+        <span className="text-xs text-ink-muted font-medium">{label}</span>
       </div>
       <span className="text-2xl font-extrabold" style={{ color }}>
         {value}
@@ -118,11 +119,11 @@ function CvssGauge({ score }: { score: number }) {
   const pct = score / 10
   const data = [
     { value: pct * 100, fill: color },
-    { value: (1 - pct) * 100, fill: '#1f2937' },
+    { value: (1 - pct) * 100, fill: '#e5e8eb' },
   ]
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col items-center">
-      <h3 className="text-sm font-medium text-gray-400 mb-4">최고 CVSS 점수</h3>
+    <div className="bg-white border border-line rounded-2xl p-6 flex flex-col items-center">
+      <h3 className="text-sm font-medium text-ink-muted mb-4">최고 CVSS 점수</h3>
       <div className="relative w-40" style={{ height: '100px', overflow: 'hidden' }}>
         <div className="absolute top-0 left-0 w-full" style={{ height: '160px' }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -144,7 +145,7 @@ function CvssGauge({ score }: { score: number }) {
           <span className="text-3xl font-extrabold" style={{ color }}>
             {score.toFixed(1)}
           </span>
-          <span className="text-xs text-gray-500">/ 10.0</span>
+          <span className="text-xs text-ink-muted">/ 10.0</span>
         </div>
       </div>
       <span
@@ -166,8 +167,8 @@ function VulnPieChart({ vulns }: { vulns: Vulnerability[] }) {
     color: RISK_COLOR[k],
   }))
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col items-center">
-      <h3 className="text-sm font-medium text-gray-400 mb-4">위험도 분포</h3>
+    <div className="bg-white border border-line rounded-2xl p-6 flex flex-col items-center">
+      <h3 className="text-sm font-medium text-ink-muted mb-4">위험도 분포</h3>
       <ResponsiveContainer width="100%" height={140}>
         <PieChart>
           <Pie data={data} cx="50%" cy="50%" innerRadius={40} outerRadius={60} dataKey="value" paddingAngle={4}>
@@ -177,12 +178,12 @@ function VulnPieChart({ vulns }: { vulns: Vulnerability[] }) {
           </Pie>
           <Tooltip
             contentStyle={{
-              background: '#111827',
-              border: '1px solid #374151',
+              background: '#ffffff',
+              border: '1px solid #e5e8eb',
               borderRadius: 8,
               fontSize: 12,
             }}
-            itemStyle={{ color: '#e5e7eb' }}
+            itemStyle={{ color: '#191f28' }}
           />
         </PieChart>
       </ResponsiveContainer>
@@ -190,7 +191,7 @@ function VulnPieChart({ vulns }: { vulns: Vulnerability[] }) {
         {data.map((entry) => (
           <div key={entry.name} className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }} />
-            <span className="text-xs text-gray-400">{entry.name}</span>
+            <span className="text-xs text-ink-muted">{entry.name}</span>
           </div>
         ))}
       </div>
@@ -345,9 +346,9 @@ function VulnDetailModal({ vuln, onClose }: { vuln: Vulnerability; onClose: () =
       }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
     >
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl">
+      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white border border-line rounded-2xl shadow-2xl">
         {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-gray-800">
+        <div className="flex items-start justify-between p-6 border-b border-line">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2 flex-wrap">
               <RiskBadge risk={vuln.riskLevel} />
@@ -358,16 +359,16 @@ function VulnDetailModal({ vuln, onClose }: { vuln: Vulnerability; onClose: () =
                 CVSS {vuln.cvssScore.toFixed(1)} · {cvssLabel(vuln.cvssScore)}
               </span>
               {isGithubVuln && (
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-400">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-600">
                   QLoRA 모델
                 </span>
               )}
             </div>
-            <h2 className="text-lg font-bold text-white leading-snug">{vuln.vulnType}</h2>
+            <h2 className="text-lg font-bold text-ink leading-snug">{vuln.vulnType}</h2>
           </div>
           <button
             onClick={onClose}
-            className="ml-4 text-gray-500 hover:text-white transition-colors flex-shrink-0"
+            className="ml-4 text-ink-muted hover:text-ink transition-colors flex-shrink-0"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -378,20 +379,20 @@ function VulnDetailModal({ vuln, onClose }: { vuln: Vulnerability; onClose: () =
         <div className="p-6 space-y-6">
           {/* Summary */}
           {vuln.summary && (
-            <p className="text-sm text-gray-300 bg-gray-800/60 rounded-lg px-4 py-3 leading-relaxed border-l-2 border-gray-600">
+            <p className="text-sm text-ink-sub bg-surface rounded-lg px-4 py-3 leading-relaxed border-l-2 border-line-strong">
               {vuln.summary}
             </p>
           )}
 
           {/* File info (GitHub 취약점일 때) */}
           {isGithubVuln && filePath && (
-            <div className="bg-gray-800/60 rounded-lg px-4 py-3 border border-gray-700">
-              <p className="text-xs text-gray-500 mb-1">분석된 파일</p>
+            <div className="bg-surface rounded-lg px-4 py-3 border border-line">
+              <p className="text-xs text-ink-muted mb-1">분석된 파일</p>
               <a
                 href={vuln.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm font-mono text-violet-400 hover:underline break-all"
+                className="text-sm font-mono text-violet-600 hover:underline break-all"
               >
                 {filePath}
               </a>
@@ -400,23 +401,23 @@ function VulnDetailModal({ vuln, onClose }: { vuln: Vulnerability; onClose: () =
 
           {/* Code snippet viewer (GitHub-style) */}
           {isGithubVuln && filePath && (snippetLoading || fileLines !== null || snippetFetchFailed) && (
-            <div className="rounded-lg overflow-hidden border border-gray-700 text-xs font-mono">
+            <div className="rounded-lg overflow-hidden border border-line text-xs font-mono">
               {/* header */}
-              <div className="flex items-center justify-between px-3 py-2 bg-gray-800 border-b border-gray-700">
+              <div className="flex items-center justify-between px-3 py-2 bg-field border-b border-line">
                 <div className="flex items-center gap-2">
-                  <svg className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <svg className="w-3.5 h-3.5 text-ink-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
                   </svg>
-                  <span className="text-gray-300 font-medium">{filePath.split('/').pop()}</span>
+                  <span className="text-ink-sub font-medium">{filePath.split('/').pop()}</span>
                   {vulnLine && (
-                    <span className="text-gray-500 font-sans">· {vulnLine}번째 줄에서 발견</span>
+                    <span className="text-ink-muted font-sans">· {vulnLine}번째 줄에서 발견</span>
                   )}
                 </div>
                 <a
                   href={`${vuln.url}${vulnLine ? `#L${vulnLine}` : ''}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-violet-400 hover:text-violet-300 transition-colors font-sans flex-shrink-0 ml-2"
+                  className="text-violet-600 hover:text-violet-500 transition-colors font-sans flex-shrink-0 ml-2"
                 >
                   GitHub에서 보기 →
                 </a>
@@ -424,21 +425,21 @@ function VulnDetailModal({ vuln, onClose }: { vuln: Vulnerability; onClose: () =
 
               {/* body */}
               {snippetLoading ? (
-                <div className="bg-gray-950 px-4 py-3 text-gray-600 font-sans flex items-center gap-2">
-                  <svg className="animate-spin w-3 h-3 text-gray-500 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                <div className="bg-surface px-4 py-3 text-ink-faint font-sans flex items-center gap-2">
+                  <svg className="animate-spin w-3 h-3 text-ink-muted flex-shrink-0" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                   </svg>
                   코드 불러오는 중...
                 </div>
               ) : snippetFetchFailed ? (
-                <div className="bg-gray-950 px-4 py-4 font-sans flex items-start gap-3">
-                  <span className="text-yellow-400 flex-shrink-0">⚠️</span>
+                <div className="bg-surface px-4 py-4 font-sans flex items-start gap-3">
+                  <span className="text-yellow-500 flex-shrink-0">⚠️</span>
                   <div>
-                    <p className="text-yellow-400/90 text-xs font-semibold mb-1">코드를 불러올 수 없습니다</p>
-                    <p className="text-gray-500 text-xs">비공개 레포이거나 네트워크 오류가 발생했습니다.</p>
+                    <p className="text-yellow-600 text-xs font-semibold mb-1">코드를 불러올 수 없습니다</p>
+                    <p className="text-ink-muted text-xs">비공개 레포이거나 네트워크 오류가 발생했습니다.</p>
                     <a href={vuln.url} target="_blank" rel="noopener noreferrer"
-                      className="inline-block mt-2 text-xs text-violet-400 hover:underline">
+                      className="inline-block mt-2 text-xs text-violet-600 hover:underline">
                       GitHub에서 직접 확인 →
                     </a>
                   </div>
@@ -446,7 +447,7 @@ function VulnDetailModal({ vuln, onClose }: { vuln: Vulnerability; onClose: () =
               ) : fileLines ? (
                 vulnLine ? (
                   /* 줄번호 확인됨 — 코드 스니펫 표시 */
-                  <div className="bg-gray-950 overflow-x-auto">
+                  <div className="bg-surface overflow-x-auto">
                     {getSnippetLines(fileLines, vulnLine).map(({ lineNum, content, isVuln }) => (
                       <div
                         key={lineNum}
@@ -454,10 +455,10 @@ function VulnDetailModal({ vuln, onClose }: { vuln: Vulnerability; onClose: () =
                           isVuln ? 'bg-red-500/10 border-l-2 border-red-500' : 'border-l-2 border-transparent'
                         }`}
                       >
-                        <span className="select-none w-10 text-right pr-4 py-0.5 text-gray-600 flex-shrink-0 leading-6">
+                        <span className="select-none w-10 text-right pr-4 py-0.5 text-ink-faint flex-shrink-0 leading-6">
                           {lineNum}
                         </span>
-                        <span className={`py-0.5 pr-4 whitespace-pre leading-6 ${isVuln ? 'text-red-200' : 'text-gray-400'}`}>
+                        <span className={`py-0.5 pr-4 whitespace-pre leading-6 ${isVuln ? 'text-red-600' : 'text-ink-muted'}`}>
                           {content || ' '}
                         </span>
                       </div>
@@ -465,17 +466,17 @@ function VulnDetailModal({ vuln, onClose }: { vuln: Vulnerability; onClose: () =
                   </div>
                 ) : (
                   /* 줄번호 불명 — 취약 가능성 안내 */
-                  <div className="bg-yellow-500/5 px-4 py-4 font-sans">
+                  <div className="bg-yellow-50 px-4 py-4 font-sans">
                     <div className="flex items-start gap-3">
-                      <span className="text-yellow-400 text-base flex-shrink-0 mt-0.5">⚠️</span>
+                      <span className="text-yellow-500 text-base flex-shrink-0 mt-0.5">⚠️</span>
                       <div>
-                        <p className="text-yellow-400/90 text-xs font-semibold mb-1">취약 패턴 위치를 특정하지 못했습니다</p>
-                        <p className="text-yellow-500/70 text-xs leading-relaxed">
+                        <p className="text-yellow-600 text-xs font-semibold mb-1">취약 패턴 위치를 특정하지 못했습니다</p>
+                        <p className="text-yellow-600 text-xs leading-relaxed">
                           이 파일에서 잠재적 취약 가능성이 감지되었으나 정확한 코드 위치를 확인하지 못했습니다.
                           실제 취약점이 아닐 수 있으며, 파일 전체를 직접 검토하는 것을 권장합니다.
                         </p>
                         <a href={vuln.url} target="_blank" rel="noopener noreferrer"
-                          className="inline-block mt-2 text-xs text-violet-400 hover:underline">
+                          className="inline-block mt-2 text-xs text-violet-600 hover:underline">
                           GitHub에서 파일 전체 확인 →
                         </a>
                       </div>
@@ -500,12 +501,12 @@ function VulnDetailModal({ vuln, onClose }: { vuln: Vulnerability; onClose: () =
             <>
               {attack && (
                 <Section title="공격 패턴" icon="⚡" color="#f97316">
-                  <p className="text-sm text-gray-300 leading-relaxed">{attack}</p>
+                  <p className="text-sm text-ink-sub leading-relaxed">{attack}</p>
                 </Section>
               )}
               {vuln.solution && (
                 <Section title="수정 방법" icon="🛠️" color="#22c55e">
-                  <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-sm text-ink-sub leading-relaxed whitespace-pre-wrap">
                     {vuln.solution}
                   </p>
                 </Section>
@@ -514,12 +515,12 @@ function VulnDetailModal({ vuln, onClose }: { vuln: Vulnerability; onClose: () =
           ) : hardcodedMeta ? (
             <>
               <Section title="발생 원인" icon="🔎" color="#f97316">
-                <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                <p className="text-sm text-ink-sub leading-relaxed whitespace-pre-wrap">
                   {hardcodedMeta.cause}
                 </p>
               </Section>
               <Section title="해결 방법" icon="🛠️" color="#22c55e">
-                <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                <p className="text-sm text-ink-sub leading-relaxed whitespace-pre-wrap">
                   {hardcodedMeta.remedy}
                 </p>
                 {hardcodedMeta.reference && (
@@ -527,7 +528,7 @@ function VulnDetailModal({ vuln, onClose }: { vuln: Vulnerability; onClose: () =
                     href={hardcodedMeta.reference}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block mt-3 text-xs text-cyan-400 hover:underline"
+                    className="inline-block mt-3 text-xs text-cyan-600 hover:underline"
                   >
                     참고 문서 →
                   </a>
@@ -538,23 +539,23 @@ function VulnDetailModal({ vuln, onClose }: { vuln: Vulnerability; onClose: () =
             <>
               {(vuln.description || aiMeta?.description) && (
                 <Section title="발생 원인" icon="🔎" color="#f97316">
-                  <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-sm text-ink-sub leading-relaxed whitespace-pre-wrap">
                     {vuln.description ?? aiMeta?.description}
                   </p>
                 </Section>
               )}
               {(vuln.solution || aiMeta?.solution) && (
                 <Section title="해결 방법" icon="🛠️" color="#22c55e">
-                  <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-sm text-ink-sub leading-relaxed whitespace-pre-wrap">
                     {vuln.solution ?? aiMeta?.solution}
                   </p>
                 </Section>
               )}
             </>
           ) : metaLoading ? (
-            <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-800/50 rounded-lg px-4 py-3">
+            <div className="flex items-center gap-2 text-xs text-ink-muted bg-surface rounded-lg px-4 py-3">
               <svg
-                className="animate-spin w-3.5 h-3.5 text-green-400 flex-shrink-0"
+                className="animate-spin w-3.5 h-3.5 text-brand flex-shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
               >
@@ -564,7 +565,7 @@ function VulnDetailModal({ vuln, onClose }: { vuln: Vulnerability; onClose: () =
               설명을 생성하고 있습니다...
             </div>
           ) : (
-            <div className="text-xs text-gray-500 bg-gray-800/50 rounded-lg px-4 py-3">
+            <div className="text-xs text-ink-muted bg-surface rounded-lg px-4 py-3">
               이 취약점 유형에 대한 상세 설명이 아직 준비되지 않았습니다.
             </div>
           )}
@@ -572,11 +573,11 @@ function VulnDetailModal({ vuln, onClose }: { vuln: Vulnerability; onClose: () =
           {/* AI Analysis */}
           {vuln.aiAnalysis && (
             <Section title="AI 분석" icon="🤖" color="#3b82f6">
-              <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+              <p className="text-sm text-ink-sub leading-relaxed whitespace-pre-wrap">
                 {vuln.aiAnalysis}
               </p>
               {vuln.aiModel && (
-                <p className="text-xs text-gray-600 mt-2">모델: {vuln.aiModel}</p>
+                <p className="text-xs text-ink-faint mt-2">모델: {vuln.aiModel}</p>
               )}
             </Section>
           )}
@@ -590,7 +591,7 @@ function VulnDetailModal({ vuln, onClose }: { vuln: Vulnerability; onClose: () =
               style={{ width: `${(vuln.cvssScore / 10) * 100}%`, backgroundColor: cvssCol }}
             />
           </div>
-          <div className="flex justify-between mt-1.5 text-xs text-gray-600">
+          <div className="flex justify-between mt-1.5 text-xs text-ink-faint">
             <span>0</span>
             <span>CVSS 점수 범위</span>
             <span>10</span>
@@ -604,8 +605,8 @@ function VulnDetailModal({ vuln, onClose }: { vuln: Vulnerability; onClose: () =
 function InfoRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="flex gap-3 items-start">
-      <span className="text-xs text-gray-500 w-24 flex-shrink-0 pt-0.5">{label}</span>
-      <span className={`text-xs text-gray-300 break-all ${mono ? 'font-mono' : ''}`}>{value}</span>
+      <span className="text-xs text-ink-muted w-24 flex-shrink-0 pt-0.5">{label}</span>
+      <span className={`text-xs text-ink-sub break-all ${mono ? 'font-mono' : ''}`}>{value}</span>
     </div>
   )
 }
@@ -629,7 +630,7 @@ function Section({
           {title}
         </h3>
       </div>
-      <div className="pl-6 border-l-2 border-gray-700">{children}</div>
+      <div className="pl-6 border-l-2 border-line">{children}</div>
     </div>
   )
 }
@@ -641,18 +642,18 @@ function VulnRow({ vuln, onClick }: { vuln: Vulnerability; onClick: () => void }
   return (
     <tr
       onClick={onClick}
-      className="border-b border-gray-800 cursor-pointer hover:bg-gray-800/60 transition-colors"
+      className="border-b border-line cursor-pointer hover:bg-surface transition-colors"
     >
       <td className="px-4 py-3">
         <RiskBadge risk={vuln.riskLevel} />
       </td>
-      <td className="px-4 py-3 text-sm font-medium text-gray-200">{vuln.vulnType}</td>
-      <td className="px-4 py-3 text-xs text-gray-400 max-w-xs truncate font-mono">{vuln.url}</td>
-      <td className="px-4 py-3 text-xs text-gray-400">{vuln.parameter || '—'}</td>
+      <td className="px-4 py-3 text-sm font-medium text-ink">{vuln.vulnType}</td>
+      <td className="px-4 py-3 text-xs text-ink-muted max-w-xs truncate font-mono">{vuln.url}</td>
+      <td className="px-4 py-3 text-xs text-ink-muted">{vuln.parameter || '—'}</td>
       <td className="px-4 py-3 text-sm font-mono font-semibold" style={{ color }}>
         {vuln.cvssScore.toFixed(1)}
       </td>
-      <td className="px-4 py-3 text-gray-600 text-xs">→</td>
+      <td className="px-4 py-3 text-ink-faint text-xs">→</td>
     </tr>
   )
 }
@@ -669,10 +670,10 @@ function GitHubVulnCard({ vuln, onClick }: { vuln: Vulnerability; onClick: () =>
   return (
     <div
       onClick={onClick}
-      className={`bg-gray-900 border rounded-xl p-5 cursor-pointer transition-all group ${
+      className={`bg-white border rounded-xl p-5 cursor-pointer transition-all group ${
         isPotential
-          ? 'border-yellow-900/50 hover:border-yellow-700/60 hover:bg-yellow-950/20'
-          : 'border-gray-800 hover:border-gray-600 hover:bg-gray-800/60'
+          ? 'border-yellow-200 hover:border-yellow-300 hover:bg-yellow-50'
+          : 'border-line hover:border-line-strong hover:bg-surface'
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -686,15 +687,15 @@ function GitHubVulnCard({ vuln, onClick }: { vuln: Vulnerability; onClick: () =>
               {vuln.cvssScore.toFixed(1)}
             </span>
             {isPotential && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-500 border border-yellow-500/30">
                 ⚠️ 취약 가능성
               </span>
             )}
           </div>
-          <h3 className="text-sm font-semibold text-white mb-1">{vuln.vulnType}</h3>
-          {attack && <p className="text-xs text-gray-500 leading-relaxed truncate">{attack}</p>}
+          <h3 className="text-sm font-semibold text-ink mb-1">{vuln.vulnType}</h3>
+          {attack && <p className="text-xs text-ink-muted leading-relaxed truncate">{attack}</p>}
         </div>
-        <span className="text-gray-600 group-hover:text-gray-400 text-xs transition-colors flex-shrink-0">
+        <span className="text-ink-faint group-hover:text-ink-muted text-xs transition-colors flex-shrink-0">
           →
         </span>
       </div>
@@ -702,7 +703,7 @@ function GitHubVulnCard({ vuln, onClick }: { vuln: Vulnerability; onClick: () =>
       {filePath && (
         <div
           className={`mt-3 flex items-center gap-2 text-xs rounded-lg px-3 py-2 ${
-            isPotential ? 'text-yellow-700/80 bg-yellow-950/30' : 'text-gray-600 bg-gray-800/60'
+            isPotential ? 'text-yellow-700 bg-yellow-50' : 'text-ink-faint bg-surface'
           }`}
         >
           <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -734,20 +735,20 @@ function SeverityBarChart({ vulns }: { vulns: Vulnerability[] }) {
     .filter((d) => d.count > 0)
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-      <h3 className="text-sm font-medium text-gray-400 mb-4">심각도별 분포</h3>
+    <div className="bg-white border border-line rounded-2xl p-6">
+      <h3 className="text-sm font-medium text-ink-muted mb-4">심각도별 분포</h3>
       <ResponsiveContainer width="100%" height={120}>
         <BarChart data={data} barSize={28}>
-          <XAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+          <XAxis dataKey="name" tick={{ fill: '#8b95a1', fontSize: 11 }} axisLine={false} tickLine={false} />
           <YAxis hide />
           <Tooltip
             contentStyle={{
-              background: '#111827',
-              border: '1px solid #374151',
+              background: '#ffffff',
+              border: '1px solid #e5e8eb',
               borderRadius: 8,
               fontSize: 12,
             }}
-            itemStyle={{ color: '#e5e7eb' }}
+            itemStyle={{ color: '#191f28' }}
           />
           <Bar dataKey="count" radius={[4, 4, 0, 0]}>
             {data.map((entry) => (
@@ -787,12 +788,12 @@ export default function ReportPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-surface text-ink flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">리포트를 불러오지 못했습니다.</p>
           <button
             onClick={() => navigate('/reports')}
-            className="text-sm text-gray-400 hover:text-white"
+            className="text-sm text-ink-muted hover:text-ink"
           >
             ← 이력으로 돌아가기
           </button>
@@ -803,13 +804,13 @@ export default function ReportPage() {
 
   if (!vulns || !scan) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-surface text-ink flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <svg className="animate-spin w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24">
+          <svg className="animate-spin w-8 h-8 text-brand" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>
-          <p className="text-gray-400 text-sm">리포트 로딩 중...</p>
+          <p className="text-ink-muted text-sm">리포트 로딩 중...</p>
         </div>
       </div>
     )
@@ -842,17 +843,14 @@ function WebsiteReportView({
   const countByRisk = (r: RiskLevel) => vulns.filter((v) => v.riskLevel === r).length
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-surface text-ink">
       {selected && <VulnDetailModal vuln={selected} onClose={() => setSelected(null)} />}
 
-      <nav className="flex items-center justify-between px-8 py-5 border-b border-gray-800 sticky top-0 bg-gray-950/90 backdrop-blur-sm z-10">
-        <button onClick={() => navigate('/')} className="flex items-center gap-2">
-          <span className="text-green-400 text-xl font-mono font-bold">⬡</span>
-          <span className="text-xl font-bold tracking-tight">ScanOps</span>
-        </button>
+      <nav className="flex items-center justify-between px-8 py-5 border-b border-line sticky top-0 bg-white/90 backdrop-blur-sm z-10">
+        <Logo onClick={() => navigate('/')} />
         <button
           onClick={() => navigate('/reports')}
-          className="text-sm text-gray-400 hover:text-white transition-colors"
+          className="text-sm text-ink-muted hover:text-ink transition-colors"
         >
           ← 이력으로 돌아가기
         </button>
@@ -866,13 +864,13 @@ function WebsiteReportView({
               🌐 웹사이트 스캔
             </span>
             {scan.verified && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-xs">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/30 text-brand text-xs">
                 ✓ 인증됨
               </span>
             )}
           </div>
           <h1 className="text-3xl font-extrabold mb-1">보안 진단 리포트</h1>
-          <p className="text-gray-400 text-sm font-mono truncate">{scan.targetUrl}</p>
+          <p className="text-ink-muted text-sm font-mono truncate">{scan.targetUrl}</p>
         </div>
 
         {/* Summary cards */}
@@ -892,15 +890,15 @@ function WebsiteReportView({
         )}
 
         {/* Table */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-800">
+        <div className="bg-white border border-line rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-line">
             <h2 className="font-semibold text-sm">취약점 목록</h2>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-ink-muted mt-0.5">
               항목을 클릭하면 발생 원인과 해결 방법을 확인할 수 있습니다.
             </p>
           </div>
           {vulns.length === 0 ? (
-            <div className="px-6 py-12 text-center text-gray-500 text-sm">
+            <div className="px-6 py-12 text-center text-ink-muted text-sm">
               <p className="text-3xl mb-3">🎉</p>
               발견된 취약점이 없습니다.
             </div>
@@ -908,7 +906,7 @@ function WebsiteReportView({
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="border-b border-gray-800 text-xs text-gray-500">
+                  <tr className="border-b border-line text-xs text-ink-muted">
                     <th className="px-4 py-3 font-medium">위험도</th>
                     <th className="px-4 py-3 font-medium">유형</th>
                     <th className="px-4 py-3 font-medium">URL</th>
@@ -956,20 +954,17 @@ function GitHubReportView({
   const potentialCount = vulns.filter((v) => isPotentialVuln(v)).length
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-surface text-ink">
       {selected && <VulnDetailModal vuln={selected} onClose={() => setSelected(null)} />}
 
       {/* Top gradient accent */}
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
 
-      <nav className="flex items-center justify-between px-8 py-5 border-b border-gray-800 sticky top-0 bg-gray-950/90 backdrop-blur-sm z-10">
-        <button onClick={() => navigate('/')} className="flex items-center gap-2">
-          <span className="text-green-400 text-xl font-mono font-bold">⬡</span>
-          <span className="text-xl font-bold tracking-tight">ScanOps</span>
-        </button>
+      <nav className="flex items-center justify-between px-8 py-5 border-b border-line sticky top-0 bg-white/90 backdrop-blur-sm z-10">
+        <Logo onClick={() => navigate('/')} />
         <button
           onClick={() => navigate('/reports')}
-          className="text-sm text-gray-400 hover:text-white transition-colors"
+          className="text-sm text-ink-muted hover:text-ink transition-colors"
         >
           ← 이력으로 돌아가기
         </button>
@@ -979,10 +974,10 @@ function GitHubReportView({
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-3 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/30 text-violet-400 text-xs font-medium">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/30 text-violet-600 text-xs font-medium">
               📁 GitHub 레포 분석
             </span>
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-800 border border-gray-700 text-gray-400 text-xs">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-field border border-line text-ink-muted text-xs">
               🤖 QLoRA 파인튜닝 모델
             </span>
           </div>
@@ -991,7 +986,7 @@ function GitHubReportView({
             href={scan.targetUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-mono text-violet-400 hover:underline truncate block"
+            className="text-sm font-mono text-violet-600 hover:underline truncate block"
           >
             {scan.targetUrl}
           </a>
@@ -1018,18 +1013,18 @@ function GitHubReportView({
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <div>
               <h2 className="font-semibold text-sm">취약점 목록</h2>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-ink-muted mt-0.5">
                 카드를 클릭하면 공격 패턴과 수정 방법을 확인할 수 있습니다.
               </p>
             </div>
             <div className="flex items-center gap-2">
               {confirmedCount > 0 && (
-                <span className="text-xs font-medium bg-violet-500/15 text-violet-400 border border-violet-500/30 px-2.5 py-1 rounded-full">
+                <span className="text-xs font-medium bg-violet-500/15 text-violet-600 border border-violet-500/30 px-2.5 py-1 rounded-full">
                   🛡️ 확인 {confirmedCount}개
                 </span>
               )}
               {potentialCount > 0 && (
-                <span className="text-xs font-medium bg-yellow-500/15 text-yellow-400 border border-yellow-500/30 px-2.5 py-1 rounded-full">
+                <span className="text-xs font-medium bg-yellow-500/15 text-yellow-500 border border-yellow-500/30 px-2.5 py-1 rounded-full">
                   ⚠️ 가능성 {potentialCount}개
                 </span>
               )}
@@ -1037,10 +1032,10 @@ function GitHubReportView({
           </div>
 
           {vulns.length === 0 ? (
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl px-6 py-16 text-center">
+            <div className="bg-white border border-line rounded-2xl px-6 py-16 text-center">
               <p className="text-4xl mb-3">🎉</p>
-              <p className="text-gray-400 text-sm">취약점이 발견되지 않았습니다.</p>
-              <p className="text-gray-600 text-xs mt-1">코드가 안전합니다!</p>
+              <p className="text-ink-muted text-sm">취약점이 발견되지 않았습니다.</p>
+              <p className="text-ink-faint text-xs mt-1">코드가 안전합니다!</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
