@@ -139,7 +139,7 @@ export default function LandingPage() {
             <span className="w-1.5 h-1.5 rounded-full bg-brand" />
             보안 특화 파인튜닝 모델 · AI 자동 진단
           </div>
-          <h1 className="text-[40px] sm:text-[56px] font-extrabold tracking-tight leading-[1.12]">
+          <h1 className="text-[30px] sm:text-[56px] font-extrabold tracking-tight leading-[1.12]">
             범용 AI가 놓치는 취약점,
             <br />
             <span className="text-brand">ScanOps는 잡습니다</span>
