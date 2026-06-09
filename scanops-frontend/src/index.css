@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+/* ── ScanOps light theme (Toss-inspired) ─────────────────────────────── */
+@theme {
+  --color-brand: #3182f6;
+  --color-brand-hover: #2563eb;
+  --color-brand-soft: #eaf2fe;
+
+  --color-ink: #191f28;
+  --color-ink-sub: #4e5968;
+  --color-ink-muted: #8b95a1;
+  --color-ink-faint: #b0b8c1;
+
+  --color-line: #e5e8eb;
+  --color-line-strong: #d1d6db;
+  --color-surface: #f9fafb;
+  --color-field: #f2f4f6;
+
+  --color-scan-web: #3182f6;
+  --color-scan-code: #8b5cf6;
+}
+
+html {
+  background: #ffffff;
+}
+
+body {
+  margin: 0;
+  font-family:
+    'Pretendard', 'Apple SD Gothic Neo', system-ui, 'Segoe UI', Roboto, sans-serif;
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Toss-like progress shimmer used on the scan status screen */
+@keyframes progress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
