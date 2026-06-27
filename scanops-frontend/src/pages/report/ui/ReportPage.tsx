@@ -184,6 +184,13 @@ function VulnCard({ v, defaultOpen, onCopy }: { v: Vulnerability; defaultOpen?: 
             <Section icon="check-circle" title="해결 방법" tone="success">
               <p className="text-[13.5px] text-ink-sub leading-relaxed">{v.fix}</p>
               {v.fixCode && <div className="mt-2.5"><CodeBlock code={v.fixCode} onCopy={onCopy} good /></div>}
+              <button
+                type="button"
+                onClick={() => { navigator.clipboard?.writeText(buildFixPrompt(v)); onCopy() }}
+                className="mt-3 inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white border border-success-soft text-success text-[12.5px] font-semibold hover:bg-success-soft transition-colors"
+              >
+                <Icon name="zap" size={13} /> AI 수정 프롬프트 복사
+              </button>
             </Section>
           )}
 
@@ -202,14 +209,30 @@ function VulnCard({ v, defaultOpen, onCopy }: { v: Vulnerability; defaultOpen?: 
   )
 }
 
+/** 사용자가 ChatGPT·Claude 등에 그대로 붙여넣어 수정 코드를 받을 수 있는 프롬프트 생성 (LLM 호출 없음). */
+function buildFixPrompt(v: Vulnerability): string {
+  return [
+    '다음 보안 취약점을 수정하는 방법을 내 코드에 맞는 예시와 함께 알려줘.',
+    '',
+    `[취약점] ${v.name}${v.cwe ? ` (${v.cwe})` : ''}`,
+    `[심각도] ${v.severity} · CVSS ${v.cvss.toFixed(1)}`,
+    v.location ? `[위치] ${v.location}` : '',
+    v.summary ? `[문제] ${v.summary}` : '',
+    v.fix ? `[권장 조치] ${v.fix}` : '',
+    '',
+    '구체적인 수정 코드와 설정(헤더/옵션 등)을 단계별로 작성해줘.',
+  ].filter(Boolean).join('\n')
+}
+
 function Section({ icon, title, tone, children }: { icon: Parameters<typeof Icon>[0]['name']; title: string; tone?: 'danger' | 'success'; children: React.ReactNode }) {
   const color = tone === 'danger' ? 'var(--color-danger)' : tone === 'success' ? 'var(--color-success)' : 'var(--color-ink-sub)'
+  const box = tone === 'danger' ? 'bg-danger-soft/40' : tone === 'success' ? 'bg-success-soft/50' : ''
   return (
     <div className="mt-4">
       <p className="flex items-center gap-1.5 text-[12.5px] font-bold mb-2" style={{ color }}>
         <Icon name={icon} size={14} /> {title}
       </p>
-      {children}
+      {tone ? <div className={`rounded-xl px-4 py-3 ${box}`}>{children}</div> : children}
     </div>
   )
 }
