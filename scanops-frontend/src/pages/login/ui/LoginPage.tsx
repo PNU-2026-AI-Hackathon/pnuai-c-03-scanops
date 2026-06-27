@@ -16,7 +16,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  // 백엔드 OAuth 실패 시 ?error=메시지 로 리다이렉트됨 → 표시
+  const [error, setError] = useState(() => new URLSearchParams(location.search).get('error') ?? '')
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
