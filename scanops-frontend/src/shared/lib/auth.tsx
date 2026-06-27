@@ -2,20 +2,28 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { PlanId, User } from './mock'
 
 /**
- * Mock authentication/session. Persists a fake user to localStorage so the app
- * behaves like a logged-in SaaS without a backend. Replace the bodies of
- * login/signup/loginWithGitHub with real API + OAuth once available — the
- * `User` shape and hook surface are the contract the UI depends on.
+ * Authentication/session.
+ * - GitHub OAuth is REAL: the button redirects to the backend, which exchanges
+ *   the code and redirects back with a JWT; `loginWithToken` calls /api/auth/me.
+ * - Email/password remain mocked (no backend endpoint yet).
+ * Token is stored in localStorage and attached as Bearer by the http client.
  */
 
 const STORAGE_KEY = 'scanops.session'
+const TOKEN_KEY = 'scanops.token'
+
+export const getToken = () => localStorage.getItem(TOKEN_KEY)
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
 interface AuthState {
   user: User | null
   ready: boolean
   login: (email: string, password: string) => Promise<void>
   signup: (email: string, password: string) => Promise<void>
-  /** Completes a (mocked) GitHub OAuth login — called from the callback screen. */
+  /** Completes a REAL GitHub login from the OAuth callback (?token=…). */
+  loginWithToken: (token: string) => Promise<void>
+  /** Mock GitHub completion — local-dev fallback when no token is present. */
   completeGitHub: (login: string) => Promise<User>
   logout: () => void
   update: (patch: Partial<User>) => void
@@ -76,7 +84,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     set(u)
     return u
   }
-  const logout = () => set(null)
+  // REAL: store JWT from OAuth callback, then fetch the profile from the backend.
+  const loginWithToken = async (token: string) => {
+    localStorage.setItem(TOKEN_KEY, token)
+    const res = await fetch(`${API_BASE}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) throw new Error('me failed')
+    const me = await res.json()
+    set({
+      id: String(me.id),
+      name: me.name || me.githubLogin,
+      email: me.email || `${me.githubLogin}@users.noreply.github.com`,
+      plan: (me.plan as PlanId) ?? 'FREE',
+      avatarUrl: me.avatarUrl || null,
+      githubLogin: me.githubLogin ?? null,
+    })
+  }
+  const logout = () => {
+    localStorage.removeItem(TOKEN_KEY)
+    set(null)
+  }
   const update = (patch: Partial<User>) => setUser((u) => {
     if (!u) return u
     const next = { ...u, ...patch }
@@ -85,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   })
 
   return (
-    <Ctx.Provider value={{ user, ready, login, signup, completeGitHub, logout, update }}>
+    <Ctx.Provider value={{ user, ready, login, signup, loginWithToken, completeGitHub, logout, update }}>
       {children}
     </Ctx.Provider>
   )

@@ -6,6 +6,7 @@ import Button from '../../../shared/ui/Button'
 import Checkbox from '../../../shared/ui/Checkbox'
 import Icon from '../../../shared/ui/Icon'
 import { useAuth } from '../../../shared/lib/auth'
+import { GITHUB_AUTHORIZE_URL } from '../../../shared/lib/config'
 
 const TERMS = [
   { key: 'tos', label: '[필수] 이용약관 동의', required: true },
@@ -65,7 +66,7 @@ export default function SignupPage() {
             block
             leftIcon="github"
             className="mt-7"
-            onClick={() => navigate('/auth/github/callback', { state: { from: '/onboarding', signup: true } })}
+            onClick={() => { window.location.href = GITHUB_AUTHORIZE_URL }}
           >
             GitHub로 시작하기
           </Button>

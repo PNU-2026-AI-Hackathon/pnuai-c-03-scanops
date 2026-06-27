@@ -12,22 +12,23 @@ import { useAuth } from '../../../shared/lib/auth'
 export default function GitHubCallbackPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { completeGitHub } = useAuth()
+  const { loginWithToken, completeGitHub } = useAuth()
   const [phase, setPhase] = useState<'connecting' | 'done' | 'error'>('connecting')
   const ran = useRef(false)
-
-  const state = (location.state as { from?: string; signup?: boolean } | null) ?? {}
 
   useEffect(() => {
     if (ran.current) return
     ran.current = true
-    completeGitHub('octocat')
+    const token = new URLSearchParams(location.search).get('token')
+    // 실제 OAuth: 백엔드가 토큰을 붙여 리다이렉트. 토큰 없으면 로컬 데모용 목 폴백.
+    const flow = token ? loginWithToken(token) : completeGitHub('octocat').then(() => {})
+    flow
       .then(() => {
         setPhase('done')
-        setTimeout(() => navigate(state.signup ? '/onboarding' : state.from ?? '/dashboard', { replace: true }), 650)
+        setTimeout(() => navigate('/dashboard', { replace: true }), 650)
       })
       .catch(() => setPhase('error'))
-  }, [completeGitHub, navigate, state.from, state.signup])
+  }, [loginWithToken, completeGitHub, navigate, location.search])
 
   return (
     <div className="min-h-screen bg-white flex flex-col">

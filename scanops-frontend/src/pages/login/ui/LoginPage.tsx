@@ -5,6 +5,7 @@ import Input from '../../../shared/ui/Input'
 import Button from '../../../shared/ui/Button'
 import Icon from '../../../shared/ui/Icon'
 import { useAuth } from '../../../shared/lib/auth'
+import { GITHUB_AUTHORIZE_URL } from '../../../shared/lib/config'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -49,7 +50,7 @@ export default function LoginPage() {
             block
             leftIcon="github"
             className="mt-8"
-            onClick={() => navigate('/auth/github/callback', { state: { from } })}
+            onClick={() => { window.location.href = GITHUB_AUTHORIZE_URL }}
           >
             GitHub로 계속하기
           </Button>
