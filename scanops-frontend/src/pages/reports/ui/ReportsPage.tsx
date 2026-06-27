@@ -6,7 +6,8 @@ import Badge from '../../../shared/ui/Badge'
 import Button from '../../../shared/ui/Button'
 import Icon from '../../../shared/ui/Icon'
 import Segmented from '../../../shared/ui/Segmented'
-import { fetchScans, MODE_META, formatDateTime, type ScanSummary, type ScanStatus, type ScanMode } from '../../../shared/lib/mock'
+import { MODE_META, formatDateTime, type ScanSummary, type ScanStatus, type ScanMode } from '../../../shared/lib/mock'
+import { fetchAllScans } from '../../../shared/api/scan'
 
 type Filter = 'ALL' | ScanMode
 
@@ -23,7 +24,7 @@ export default function ReportsPage() {
   const [filter, setFilter] = useState<Filter>('ALL')
   const [q, setQ] = useState('')
 
-  useEffect(() => { fetchScans().then(setScans) }, [])
+  useEffect(() => { fetchAllScans().then(setScans) }, [])
 
   const filtered = useMemo(() => {
     if (!scans) return null
@@ -95,11 +96,11 @@ export default function ReportsPage() {
                     </div>
                     <p className="text-[12.5px] text-ink-muted">
                       {formatDateTime(s.createdAt)}
-                      {s.status === 'DONE' && ` · 취약점 ${s.total}건`}
+                      {s.status === 'DONE' && s.total > 0 && ` · 취약점 ${s.total}건`}
                       {s.loc ? ` · ${s.loc.toLocaleString('ko-KR')}줄` : ''}
                     </p>
                   </div>
-                  {s.status === 'DONE' && (
+                  {s.status === 'DONE' && s.maxCvss > 0 && (
                     <Badge tone={s.maxCvss >= 9 ? 'critical' : s.maxCvss >= 7 ? 'high' : s.maxCvss >= 4 ? 'medium' : 'low'} size="sm">
                       CVSS {s.maxCvss.toFixed(1)}
                     </Badge>

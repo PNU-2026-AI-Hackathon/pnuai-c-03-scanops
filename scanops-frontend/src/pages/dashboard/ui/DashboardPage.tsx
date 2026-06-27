@@ -8,9 +8,10 @@ import Badge from '../../../shared/ui/Badge'
 import ProgressBar from '../../../shared/ui/ProgressBar'
 import { useAuth } from '../../../shared/lib/auth'
 import {
-  fetchScans, fetchUsage, MODE_META, SEVERITY_META,
+  fetchUsage, MODE_META, SEVERITY_META,
   relativeTime, type ScanSummary, type Usage, type Severity, type SeverityCounts,
 } from '../../../shared/lib/mock'
+import { fetchAllScans } from '../../../shared/api/scan'
 
 const SEV_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
 
@@ -21,7 +22,7 @@ export default function DashboardPage() {
   const [usage, setUsage] = useState<Usage | null>(null)
 
   useEffect(() => {
-    fetchScans().then(setScans)
+    fetchAllScans().then(setScans)
     fetchUsage().then(setUsage)
   }, [])
 
@@ -124,10 +125,12 @@ export default function DashboardPage() {
                       <p className="text-[14px] font-semibold text-ink truncate">{s.target}</p>
                       <p className="text-[12px] text-ink-muted">{m.tag} · {relativeTime(s.createdAt)}</p>
                     </div>
-                    {s.status === 'DONE' ? (
+                    {s.status === 'DONE' && s.maxCvss > 0 ? (
                       <Badge tone={s.maxCvss >= 9 ? 'critical' : s.maxCvss >= 7 ? 'high' : s.maxCvss >= 4 ? 'medium' : 'low'} size="sm">
                         CVSS {s.maxCvss.toFixed(1)}
                       </Badge>
+                    ) : s.status === 'DONE' ? (
+                      <Badge tone="success" size="sm">완료</Badge>
                     ) : s.status === 'FAILED' ? (
                       <Badge tone="danger" size="sm">실패</Badge>
                     ) : (

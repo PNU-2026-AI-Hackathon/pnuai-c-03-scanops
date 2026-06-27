@@ -10,6 +10,7 @@ import {
   fetchReport, MODE_META, SEVERITY_META, formatDateTime,
   type Report, type Vulnerability, type Severity, type SeverityCounts,
 } from '../../../shared/lib/mock'
+import { isRealId, fetchRealReport } from '../../../shared/api/scan'
 
 const SEV_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
 
@@ -19,7 +20,11 @@ export default function ReportPage() {
   const { toast } = useToast()
   const [report, setReport] = useState<Report | null>(null)
 
-  useEffect(() => { if (id) fetchReport(id).then(setReport) }, [id])
+  useEffect(() => {
+    if (!id) return
+    const load = isRealId(id) ? fetchRealReport(id) : fetchReport(id)
+    load.then(setReport).catch(() => fetchReport('s-1041').then(setReport))
+  }, [id])
 
   if (!report) {
     return (
@@ -57,7 +62,7 @@ export default function ReportPage() {
                 <span style={{ color: m.color }}><Icon name={m.icon} size={20} /></span>{report.target}
               </h1>
               <p className="mt-1 text-[13px] text-ink-muted">
-                분석 {report.durationSec ? `${report.durationSec}초` : ''}{report.loc ? ` · ${report.loc.toLocaleString('ko-KR')}줄` : ''} · 엔진 qwen2.5-coder-security-v11 + taint graph
+                분석 {report.durationSec ? `${report.durationSec}초` : ''}{report.loc ? ` · ${report.loc.toLocaleString('ko-KR')}줄` : ''} · 엔진 {report.mode === 'WEBSITE' ? 'OWASP ZAP + AI 분석' : 'qwen2.5-coder-security-v11 + taint graph'}
               </p>
             </div>
             <div className="flex gap-2">
@@ -152,27 +157,35 @@ function VulnCard({ v, defaultOpen, onCopy }: { v: Vulnerability; defaultOpen?: 
       {open && (
         <div className="px-5 pb-5 pt-1 border-t border-line">
           {/* 비전문가용 한 줄 설명 */}
-          <div className="mt-3 flex items-start gap-2.5 rounded-xl bg-brand-soft/60 px-4 py-3">
-            <span className="text-brand mt-0.5 shrink-0"><Icon name="info" size={16} /></span>
-            <p className="text-[13.5px] text-ink-sub leading-relaxed">
-              <span className="font-bold text-brand">쉽게 말하면</span>　{v.plain}
-            </p>
-          </div>
-          <p className="text-[13.5px] text-ink-sub leading-relaxed mt-3">{v.summary}</p>
+          {v.plain && (
+            <div className="mt-3 flex items-start gap-2.5 rounded-xl bg-brand-soft/60 px-4 py-3">
+              <span className="text-brand mt-0.5 shrink-0"><Icon name="info" size={16} /></span>
+              <p className="text-[13.5px] text-ink-sub leading-relaxed">
+                <span className="font-bold text-brand">쉽게 말하면</span>　{v.plain}
+              </p>
+            </div>
+          )}
+          {v.summary && <p className="text-[13.5px] text-ink-sub leading-relaxed mt-3">{v.summary}</p>}
 
-          <Section icon="code" title="증거">
-            <CodeBlock code={v.evidence} onCopy={onCopy} />
-            <p className="mt-2 text-[12px] text-ink-muted">위치: <span className="font-medium text-ink-sub">{v.location}</span></p>
-          </Section>
+          {v.evidence && (
+            <Section icon="code" title="증거">
+              <CodeBlock code={v.evidence} onCopy={onCopy} />
+              <p className="mt-2 text-[12px] text-ink-muted">위치: <span className="font-medium text-ink-sub">{v.location}</span></p>
+            </Section>
+          )}
 
-          <Section icon="alert-triangle" title="공격 시나리오" tone="danger">
-            <p className="text-[13.5px] text-ink-sub leading-relaxed">{v.attack}</p>
-          </Section>
+          {v.attack && (
+            <Section icon="alert-triangle" title="공격 시나리오" tone="danger">
+              <p className="text-[13.5px] text-ink-sub leading-relaxed">{v.attack}</p>
+            </Section>
+          )}
 
-          <Section icon="check-circle" title="해결 방법" tone="success">
-            <p className="text-[13.5px] text-ink-sub leading-relaxed">{v.fix}</p>
-            {v.fixCode && <div className="mt-2.5"><CodeBlock code={v.fixCode} onCopy={onCopy} good /></div>}
-          </Section>
+          {v.fix && (
+            <Section icon="check-circle" title="해결 방법" tone="success">
+              <p className="text-[13.5px] text-ink-sub leading-relaxed">{v.fix}</p>
+              {v.fixCode && <div className="mt-2.5"><CodeBlock code={v.fixCode} onCopy={onCopy} good /></div>}
+            </Section>
+          )}
 
           <div className="mt-4 pt-3 border-t border-line">
             <p className="text-[11.5px] font-bold text-ink-muted mb-2">탐지 근거</p>
