@@ -1,149 +1,118 @@
+import { useNavigate } from 'react-router-dom'
 import AppNav from '../../../shared/ui/AppNav'
+import Logo from '../../../shared/ui/Logo'
+import Card from '../../../shared/ui/Card'
+import Button from '../../../shared/ui/Button'
+import Badge from '../../../shared/ui/Badge'
+import Icon from '../../../shared/ui/Icon'
+import { useAuth } from '../../../shared/lib/auth'
+import { PLANS, won, type PlanId } from '../../../shared/lib/mock'
 
-interface Plan {
+interface DisplayPlan {
+  id: PlanId
   name: string
   price: string
   per: string
   desc: string
   popular?: boolean
-  cta: string
-  ctaPrimary?: boolean
   trial?: string
   feats: [string, string][]
 }
 
-const PERSONAL_PLANS: Plan[] = [
-  {
-    name: 'Free',
-    price: '₩0',
-    per: '',
-    desc: '회원가입만 하면 바로 체험',
-    cta: '무료로 시작',
+const PERSONAL: DisplayPlan[] = (['FREE', 'PRO', 'MAX'] as PlanId[]).map((id) => {
+  const p = PLANS.find((x) => x.id === id)!
+  return {
+    id, name: p.name, price: p.price === 0 ? '₩0' : won(p.price), per: p.per, desc: p.desc,
+    popular: p.popular, trial: p.trial,
     feats: [
-      ['DAST 웹 스캔', '1회 무료'],
-      ['GitHub App / Actions', '미지원'],
-      ['SAST 레포 분석', '미지원'],
-      ['스캔 결과 보관', '1개월'],
+      ['DAST 웹 스캔', p.dast],
+      ['GitHub App / Actions', p.actions],
+      ['SAST 레포 분석', p.sast],
+      ['핵심 혜택', p.highlight],
     ],
-  },
-  {
-    name: 'Pro',
-    price: '₩29,900',
-    per: '/월',
-    desc: '개인·소규모 프로젝트에 추천',
-    popular: true,
-    cta: 'Pro 시작하기',
-    ctaPrimary: true,
-    trial: '7일 무료체험',
-    feats: [
-      ['DAST 웹 스캔', '월 5회'],
-      ['GitHub App / Actions', '월 5만 줄'],
-      ['SAST 레포 분석', '월 10만 줄'],
-      ['AI 브리핑·PDF', '제공'],
-    ],
-  },
-  {
-    name: 'Max',
-    price: '₩99,000',
-    per: '/월',
-    desc: '본격적인 보안 운영',
-    cta: 'Max 시작하기',
-    feats: [
-      ['DAST 웹 스캔', '월 30회'],
-      ['GitHub App / Actions', '월 30만 줄'],
-      ['SAST 레포 분석', '월 50만 줄'],
-      ['우선 분석 큐', '제공'],
-    ],
-  },
-]
+  }
+})
 
-const TEAM_PLAN: Plan = {
-  name: 'Team',
-  price: '₩89,000',
-  per: '/월',
-  desc: '기본 3명 포함 · 팀 단위 보안 운영',
-  cta: 'Team 도입 문의',
-  ctaPrimary: true,
-  feats: [
-    ['DAST 웹 스캔', '월 20회'],
-    ['GitHub App / Actions', '월 24만 줄'],
-    ['SAST 레포 분석', '월 45만 줄'],
-    ['멤버 수', '기본 3명'],
-  ],
+const TEAM = PLANS.find((p) => p.id === 'TEAM')!
+const TEAM_PLAN: DisplayPlan = {
+  id: 'TEAM', name: TEAM.name, price: won(TEAM.price), per: TEAM.per, desc: TEAM.desc, popular: true,
+  feats: [['DAST 웹 스캔', TEAM.dast], ['GitHub App / Actions', TEAM.actions], ['SAST 레포 분석', TEAM.sast], ['멤버 수', '기본 3명']],
 }
-
 const TEAM_ADDON: [string, string][] = [
-  ['멤버 추가', '1명당 +₩25,000'],
-  ['DAST 웹 스캔', '+월 7회'],
-  ['GitHub App / Actions', '+월 8만 줄'],
-  ['SAST 레포 분석', '+월 15만 줄'],
+  ['멤버 추가', '1명당 +₩25,000'], ['DAST 웹 스캔', '+월 7회'],
+  ['GitHub App / Actions', '+월 8만 줄'], ['SAST 레포 분석', '+월 15만 줄'],
 ]
-
 const OVERAGE: [string, string][] = [
-  ['SAST 레포 분석', '1만 줄당 ₩5,000'],
-  ['GitHub App / Actions', '1만 줄당 ₩5,000'],
-  ['DAST 웹 스캔', '3회당 ₩5,000'],
+  ['SAST 레포 분석', '1만 줄당 ₩5,000'], ['GitHub App / Actions', '1만 줄당 ₩5,000'], ['DAST 웹 스캔', '3회당 ₩5,000'],
 ]
 
 export default function PricingPage() {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+
+  const choose = (id: PlanId) => {
+    if (!user) return navigate('/signup')
+    if (id === 'FREE') return navigate('/scan')
+    if (id === 'TEAM') return navigate('/checkout/team')
+    navigate(`/checkout/${id.toLowerCase()}`)
+  }
+
   return (
     <div className="min-h-screen bg-surface">
-      <AppNav />
+      {user ? <AppNav /> : (
+        <header className="h-16 flex items-center justify-between px-6 sm:px-10 bg-white border-b border-line">
+          <Logo onClick={() => navigate('/')} />
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>로그인</Button>
+            <Button size="sm" onClick={() => navigate('/signup')}>무료로 시작</Button>
+          </div>
+        </header>
+      )}
 
-      <main className="max-w-[1240px] mx-auto px-6 py-14">
+      <main className="max-w-[1180px] mx-auto px-6 py-14">
         <div className="flex flex-col items-center text-center gap-2.5 mb-12">
-          <span className="px-3 py-1.5 rounded-full bg-brand-soft text-brand text-xs font-bold">요금제</span>
+          <Badge tone="brand">요금제</Badge>
           <h1 className="text-3xl font-bold text-ink tracking-tight">필요한 만큼만, 합리적으로</h1>
           <p className="text-[15px] text-ink-muted max-w-xl">
-            회원가입하면 DAST 1회를 무료로 체험할 수 있어요. Pro는 7일 무료체험을 제공하며, 모든 플랜은 언제든 해지 가능합니다.
+            회원가입하면 DAST 1회를 무료로 체험할 수 있어요. Pro는 7일 무료체험을 제공하며, 모든 플랜은 언제든 해지할 수 있습니다.
           </p>
         </div>
 
-        {/* 개인 플랜 */}
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-ink">개인 플랜</h2>
             <span className="text-[13px] text-ink-muted">혼자 또는 소규모로 시작할 때</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-            {PERSONAL_PLANS.map((p) => (
-              <PlanCard key={p.name} plan={p} />
-            ))}
+            {PERSONAL.map((p) => <PlanCard key={p.id} plan={p} current={user?.plan === p.id} onChoose={choose} />)}
           </div>
         </section>
 
-        {/* 팀 플랜 */}
         <section className="mt-12">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-ink">팀 플랜</h2>
             <span className="text-[13px] text-ink-muted">멤버가 늘어도 한도가 함께 커져요</span>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-            <PlanCard plan={TEAM_PLAN} />
-            <div className="rounded-[18px] bg-white border border-line p-6 flex flex-col">
+            <PlanCard plan={TEAM_PLAN} current={user?.plan === 'TEAM'} onChoose={choose} />
+            <Card pad="lg" className="flex flex-col">
               <h3 className="text-lg font-bold text-ink">멤버 추가 시</h3>
-              <p className="mt-1 text-[13px] text-ink-muted">
-                기본 3명을 초과해 1명을 추가할 때마다 요금과 한도가 함께 늘어납니다.
-              </p>
+              <p className="mt-1 text-[13px] text-ink-muted">기본 3명을 초과해 1명을 추가할 때마다 요금과 한도가 함께 늘어납니다.</p>
               <div className="h-px bg-line my-5" />
               <ul className="flex flex-col gap-3">
                 {TEAM_ADDON.map(([k, v]) => (
                   <li key={k} className="flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-brand">＋</span>
-                      <span className="text-[13px] text-ink-sub font-medium">{k}</span>
-                    </span>
+                    <span className="flex items-center gap-2"><span className="text-brand"><Icon name="plus" size={14} /></span><span className="text-[13px] text-ink-sub font-medium">{k}</span></span>
                     <span className="text-[13px] font-semibold text-ink">{v}</span>
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           </div>
         </section>
 
-        {/* 종량 추가결제 */}
         <section className="mt-12">
-          <div className="rounded-[18px] bg-white border border-line p-6">
+          <Card pad="lg">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-1">
               <h2 className="text-lg font-bold text-ink">한도 초과 시 종량 추가결제</h2>
               <span className="text-[13px] text-ink-muted">필요한 만큼만 그때그때 추가로 결제해요</span>
@@ -156,11 +125,11 @@ export default function PricingPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         </section>
 
         <p className="mt-8 flex items-center gap-2 text-[13px] text-ink-muted">
-          <span>ⓘ</span>
+          <Icon name="info" size={15} />
           LOC(줄 수) 한도는 베타 기간 측정값 기준의 잠정값이며, SAST·GitHub App 처리 비용을 통제하기 위한 안전장치입니다.
         </p>
       </main>
@@ -168,51 +137,40 @@ export default function PricingPage() {
   )
 }
 
-function PlanCard({ plan }: { plan: Plan }) {
+function PlanCard({ plan, current, onChoose }: { plan: DisplayPlan; current?: boolean; onChoose: (id: PlanId) => void }) {
   return (
-    <div
-      className={`rounded-[18px] bg-white p-6 flex flex-col ${
-        plan.popular ? 'border-2 border-brand' : 'border border-line'
-      }`}
-    >
-      <div className="flex items-center gap-2">
+    <Card pad="lg" className={`flex flex-col ${plan.popular ? 'border-2 border-brand' : ''}`}>
+      <div className="flex items-center gap-2 flex-wrap">
         <h2 className="text-lg font-bold text-ink">{plan.name}</h2>
-        {plan.popular && (
-          <span className="px-2 py-0.5 rounded-full bg-brand text-white text-[11px] font-bold">인기</span>
-        )}
-        {plan.trial && (
-          <span className="px-2 py-0.5 rounded-full bg-brand-soft text-brand text-[11px] font-bold">
-            {plan.trial}
-          </span>
-        )}
+        {plan.popular && <Badge tone="brand" solid size="sm">인기</Badge>}
+        {plan.trial && <Badge tone="brand" size="sm">{plan.trial}</Badge>}
+        {current && <Badge tone="success" size="sm">현재 플랜</Badge>}
       </div>
       <p className="mt-1 text-[13px] text-ink-muted">{plan.desc}</p>
-
       <div className="mt-4 flex items-baseline gap-0.5">
-        <span className="text-[30px] font-bold text-ink tracking-tight">{plan.price}</span>
+        <span className="text-[30px] font-bold text-ink tracking-tight tnum">{plan.price}</span>
         <span className="text-sm text-ink-muted font-medium">{plan.per}</span>
       </div>
 
-      <button
-        className={`mt-5 h-[46px] rounded-xl font-semibold text-sm transition-colors ${
-          plan.ctaPrimary
-            ? 'bg-brand text-white hover:bg-brand-hover'
-            : 'bg-field text-ink hover:bg-line'
-        }`}
+      <Button
+        variant={plan.popular ? 'primary' : 'outline'}
+        block
+        className="mt-5"
+        disabled={current}
+        onClick={() => onChoose(plan.id)}
       >
-        {plan.cta}
-      </button>
+        {current ? '사용 중' : plan.id === 'FREE' ? '무료로 시작' : plan.id === 'TEAM' ? 'Team 시작하기' : `${plan.name} 시작하기`}
+      </Button>
 
       <div className="h-px bg-line my-5" />
-
       <ul className="flex flex-col gap-3">
         {plan.feats.map(([k, v]) => {
           const off = v === '미지원'
           return (
             <li key={k} className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-2">
-                <span className={`text-xs font-bold ${off ? 'text-ink-faint' : 'text-emerald-500'}`}>
-                  {off ? '—' : '✓'}
+                <span className={off ? 'text-ink-faint' : 'text-success'}>
+                  <Icon name={off ? 'x' : 'check'} size={14} strokeWidth={off ? 2 : 3} />
                 </span>
                 <span className="text-[13px] text-ink-sub font-medium">{k}</span>
               </span>
@@ -221,6 +179,6 @@ function PlanCard({ plan }: { plan: Plan }) {
           )
         })}
       </ul>
-    </div>
+    </Card>
   )
 }

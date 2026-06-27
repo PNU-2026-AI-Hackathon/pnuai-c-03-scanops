@@ -1,166 +1,104 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { getScan } from '../../../api/scanApi'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import AppNav from '../../../shared/ui/AppNav'
-import type { Scan, ScanStatus } from '../../../types/scan'
+import Icon, { type IconName } from '../../../shared/ui/Icon'
+import ProgressBar from '../../../shared/ui/ProgressBar'
+import { MODE_META, type ScanMode } from '../../../shared/lib/mock'
+
+interface Stage { label: string; icon: IconName }
+const WEB_STAGES: Stage[] = [
+  { label: '대상 연결 및 크롤링', icon: 'globe' },
+  { label: '동적 취약점 패턴 분석', icon: 'search' },
+  { label: '하이브리드 그래프 검증', icon: 'shield' },
+  { label: '리포트 생성', icon: 'file-text' },
+]
+const CODE_STAGES: Stage[] = [
+  { label: '레포 가져오기', icon: 'box' },
+  { label: 'AI 모델 정적 분석', icon: 'cpu' },
+  { label: 'taint 그래프 오탐 억제', icon: 'shield' },
+  { label: '리포트 생성', icon: 'file-text' },
+]
 
 export default function StatusPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [scan, setScan] = useState<Scan | null>(null)
-  const [dots, setDots] = useState('')
+  const { state } = useLocation() as { state?: { target?: string; mode?: ScanMode } }
+  const mode: ScanMode = state?.mode ?? 'WEBSITE'
+  const target = state?.target ?? '대상 분석'
+  const m = MODE_META[mode]
+  const stages = mode === 'GITHUB_REPO' ? CODE_STAGES : WEB_STAGES
+  const reportId = mode === 'GITHUB_REPO' ? 's-1039' : mode === 'GITHUB_ACTIONS' ? 's-1036' : 's-1041'
+
+  const [progress, setProgress] = useState(6)
 
   useEffect(() => {
-    const dotTimer = setInterval(() => setDots((d) => (d.length >= 3 ? '' : d + '.')), 500)
-    return () => clearInterval(dotTimer)
-  }, [])
+    const t = setInterval(() => {
+      setProgress((p) => {
+        const next = p + Math.random() * 9 + 4
+        if (next >= 100) {
+          clearInterval(t)
+          setTimeout(() => navigate(`/report/${reportId}`, { replace: true }), 600)
+          return 100
+        }
+        return next
+      })
+    }, 520)
+    return () => clearInterval(t)
+  }, [navigate, reportId])
 
-  useEffect(() => {
-    if (!id) return
-    const poll = async () => {
-      try {
-        const data = await getScan(id)
-        setScan(data)
-        if (data.status === 'DONE') navigate(`/report/${id}`)
-      } catch {
-        /* silent retry */
-      }
-    }
-    poll()
-    const timer = setInterval(poll, 3000)
-    return () => clearInterval(timer)
-  }, [id, navigate])
-
-  const isGithub = scan?.scanMode === 'GITHUB_REPO'
+  const activeStage = Math.min(stages.length - 1, Math.floor((progress / 100) * stages.length))
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
       <AppNav />
-      <main className="flex-1 flex items-center justify-center px-4">
-        <div className="text-center max-w-md w-full">
-          {scan ? <StatusView scan={scan} dots={dots} isGithub={isGithub} /> : <LoadingView />}
+      <main className="flex-1 flex items-center justify-center px-5 py-10">
+        <div className="w-full max-w-[460px] fade-up">
+          <div className="flex flex-col items-center text-center">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12.5px] font-bold mb-6" style={{ background: m.soft, color: m.color }}>
+              <Icon name={m.icon} size={15} /> {m.tag} · {m.label}
+            </span>
+
+            <div className="relative w-28 h-28 mb-5">
+              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                <circle cx="50" cy="50" r="44" fill="none" stroke="var(--color-field)" strokeWidth="8" />
+                <circle cx="50" cy="50" r="44" fill="none" stroke={m.color} strokeWidth="8" strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 44} strokeDashoffset={2 * Math.PI * 44 * (1 - progress / 100)}
+                  style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[24px] font-bold text-ink tnum">{Math.floor(progress)}%</span>
+              </div>
+            </div>
+
+            <h2 className="text-[20px] font-bold text-ink">{progress >= 100 ? '분석 완료!' : '분석 중이에요'}</h2>
+            <p className="mt-1 text-[13.5px] text-ink-muted truncate max-w-full">{target}</p>
+          </div>
+
+          <div className="mt-7 bg-white border border-line rounded-2xl p-5 flex flex-col gap-3">
+            {stages.map((s, i) => {
+              const doneStage = i < activeStage || progress >= 100
+              const current = i === activeStage && progress < 100
+              return (
+                <div key={s.label} className="flex items-center gap-3">
+                  <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                    doneStage ? 'bg-success-soft text-success' : current ? 'bg-brand-soft text-brand' : 'bg-field text-ink-faint'
+                  }`}>
+                    {doneStage ? <Icon name="check" size={15} strokeWidth={3} />
+                      : current ? <span className="w-3.5 h-3.5 rounded-full border-2 border-brand border-t-transparent spin" />
+                      : <Icon name={s.icon} size={15} />}
+                  </span>
+                  <span className={`text-[13.5px] ${doneStage || current ? 'text-ink font-medium' : 'text-ink-muted'}`}>{s.label}</span>
+                </div>
+              )
+            })}
+            <ProgressBar value={progress} color={m.color} className="mt-1" height={6} />
+          </div>
+
+          <p className="mt-5 text-center text-[12px] text-ink-faint flex items-center justify-center gap-1.5">
+            <Icon name="lock" size={13} /> 코드는 외부로 전송되지 않고 분석 후 즉시 폐기됩니다 · Job {id}
+          </p>
         </div>
       </main>
     </div>
   )
-}
-
-function LoadingView() {
-  return (
-    <div className="flex flex-col items-center gap-4">
-      <Spinner />
-      <p className="text-ink-muted text-sm">연결 중...</p>
-    </div>
-  )
-}
-
-function StatusView({ scan, dots, isGithub }: { scan: Scan; dots: string; isGithub: boolean }) {
-  const cfg = getStatusConfig(scan.status, isGithub)
-  const accent = isGithub ? 'var(--color-scan-code)' : 'var(--color-brand)'
-
-  return (
-    <div className="flex flex-col items-center gap-7">
-      {/* Mode badge */}
-      <span
-        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] font-semibold"
-        style={{ background: isGithub ? '#f3eefe' : 'var(--color-brand-soft)', color: accent }}
-      >
-        <span>{isGithub ? '📦' : '🌐'}</span>
-        {isGithub ? 'SAST · 레포 분석' : 'DAST · 웹사이트 스캔'}
-      </span>
-
-      {/* Ring */}
-      <div
-        className="w-28 h-28 rounded-full flex items-center justify-center"
-        style={{ background: isGithub ? '#f3eefe' : 'var(--color-brand-soft)', border: `4px solid ${accent}` }}
-      >
-        {cfg.spinner ? (
-          <Spinner color={cfg.color} size="lg" />
-        ) : (
-          <span className="text-4xl">{cfg.icon}</span>
-        )}
-      </div>
-
-      {/* Text */}
-      <div className="space-y-1.5">
-        <h2 className="text-2xl font-bold" style={{ color: cfg.textColor }}>
-          {cfg.label}
-          {cfg.spinner ? dots : ''}
-        </h2>
-        <p className="text-sm text-ink-muted truncate max-w-xs">{scan.targetUrl}</p>
-      </div>
-
-      {/* Progress bar */}
-      {scan.status === 'RUNNING' && (
-        <div className="w-full max-w-xs space-y-3">
-          <div className="w-full h-2 bg-field rounded-full overflow-hidden">
-            <div className="h-full rounded-full" style={{ width: '60%', background: accent }} />
-          </div>
-          <p className="text-[13px] text-ink-sub font-medium">
-            {isGithub ? '파일을 가져와 모델로 분석 중...' : '취약점 패턴 분석 중...'}
-          </p>
-        </div>
-      )}
-
-      {/* Failed */}
-      {scan.status === 'FAILED' && (
-        <div className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-xl px-5 py-3">
-          {isGithub
-            ? '레포 분석 중 오류가 발생했습니다. URL과 접근 권한을 확인해 주세요.'
-            : '스캔 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'}
-        </div>
-      )}
-
-      {/* Job ID */}
-      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-line text-[11px]">
-        <span className="text-ink-faint font-medium">Job ID</span>
-        <span className="text-ink-sub font-semibold">{scan.id}</span>
-      </span>
-    </div>
-  )
-}
-
-function Spinner({ color = 'var(--color-brand)', size = 'md' }: { color?: string; size?: 'md' | 'lg' }) {
-  const sz = size === 'lg' ? 'w-10 h-10' : 'w-5 h-5'
-  return (
-    <svg className={`animate-spin ${sz}`} style={{ color }} fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-    </svg>
-  )
-}
-
-function getStatusConfig(status: ScanStatus, isGithub: boolean) {
-  const accent = isGithub ? 'var(--color-scan-code)' : 'var(--color-brand)'
-  const configs: Record<ScanStatus, { label: string; icon: string; spinner: boolean; color: string; textColor: string }> = {
-    PENDING: {
-      label: isGithub ? '분석 대기 중' : '스캔 대기 중',
-      icon: '⏳',
-      spinner: true,
-      color: '#f5a623',
-      textColor: '#f5a623',
-    },
-    RUNNING: {
-      label: isGithub ? '코드 분석 중' : '스캔 진행 중',
-      icon: '',
-      spinner: true,
-      color: accent,
-      textColor: accent,
-    },
-    DONE: {
-      label: isGithub ? '분석 완료!' : '스캔 완료!',
-      icon: '✅',
-      spinner: false,
-      color: accent,
-      textColor: accent,
-    },
-    FAILED: {
-      label: isGithub ? '분석 실패' : '스캔 실패',
-      icon: '❌',
-      spinner: false,
-      color: '#f04452',
-      textColor: '#f04452',
-    },
-  }
-  return configs[status]
 }
