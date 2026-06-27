@@ -151,7 +151,14 @@ function VulnCard({ v, defaultOpen, onCopy }: { v: Vulnerability; defaultOpen?: 
 
       {open && (
         <div className="px-5 pb-5 pt-1 border-t border-line">
-          <p className="text-[14px] text-ink-sub leading-relaxed mt-3">{v.summary}</p>
+          {/* 비전문가용 한 줄 설명 */}
+          <div className="mt-3 flex items-start gap-2.5 rounded-xl bg-brand-soft/60 px-4 py-3">
+            <span className="text-brand mt-0.5 shrink-0"><Icon name="info" size={16} /></span>
+            <p className="text-[13.5px] text-ink-sub leading-relaxed">
+              <span className="font-bold text-brand">쉽게 말하면</span>　{v.plain}
+            </p>
+          </div>
+          <p className="text-[13.5px] text-ink-sub leading-relaxed mt-3">{v.summary}</p>
 
           <Section icon="code" title="증거">
             <CodeBlock code={v.evidence} onCopy={onCopy} />
@@ -167,11 +174,14 @@ function VulnCard({ v, defaultOpen, onCopy }: { v: Vulnerability; defaultOpen?: 
             {v.fixCode && <div className="mt-2.5"><CodeBlock code={v.fixCode} onCopy={onCopy} good /></div>}
           </Section>
 
-          <div className="flex items-center gap-2 flex-wrap mt-4 pt-3 border-t border-line">
-            <Badge tone={verdict.tone} size="sm"><Icon name="shield" size={12} /> {verdict.label}</Badge>
-            <Badge tone="neutral" size="sm"><Icon name="cpu" size={12} /> {v.aiModel}</Badge>
-            <Badge tone="neutral" size="sm">신뢰도 {(v.confidence * 100).toFixed(0)}%</Badge>
-            <span className="ml-auto text-[11.5px] text-ink-faint font-mono">{v.cvssVector}</span>
+          <div className="mt-4 pt-3 border-t border-line">
+            <p className="text-[11.5px] font-bold text-ink-muted mb-2">탐지 근거</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge tone={verdict.tone} size="sm"><Icon name="shield" size={12} /> {verdict.label}</Badge>
+              <Badge tone="neutral" size="sm"><Icon name="cpu" size={12} /> {v.aiModel}</Badge>
+              <Badge tone="neutral" size="sm">신뢰도 {(v.confidence * 100).toFixed(0)}%</Badge>
+              <span className="ml-auto text-[11px] text-ink-faint font-mono hidden sm:block">{v.cvssVector}</span>
+            </div>
           </div>
         </div>
       )}

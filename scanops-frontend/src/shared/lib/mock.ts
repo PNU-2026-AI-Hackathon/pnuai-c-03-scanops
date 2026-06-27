@@ -36,6 +36,8 @@ export interface Vulnerability {
   cvssVector: string
   location: string
   evidence: string
+  /** 비전문가도 이해하는 한 줄 설명 ("쉽게 말하면"). */
+  plain: string
   summary: string
   attack: string
   fix: string
@@ -114,6 +116,7 @@ const VULNS: Vulnerability[] = [
     cvssVector: 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
     location: 'POST /api/login → username',
     evidence: `String sql = "SELECT * FROM users WHERE name='" + username + "'";`,
+    plain: '로그인 창에 특수문자를 넣는 것만으로 비밀번호 없이 남의 계정에 들어갈 수 있어요.',
     summary: '로그인 쿼리가 사용자 입력을 문자열로 직접 연결해, 인증 우회·데이터 유출이 가능합니다.',
     attack: "username에 ' OR '1'='1' -- 를 넣으면 비밀번호 검증 없이 첫 사용자로 로그인됩니다.",
     fix: 'PreparedStatement로 파라미터를 바인딩하세요. 입력값을 쿼리 문자열에 직접 연결하지 마세요.',
@@ -125,6 +128,7 @@ const VULNS: Vulnerability[] = [
     cvssVector: 'AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N',
     location: 'GET /search → q',
     evidence: `response.getWriter().write("결과: " + request.getParameter("q"));`,
+    plain: '검색창에 심은 악성 스크립트가, 그 링크를 클릭한 사람의 브라우저에서 몰래 실행돼요.',
     summary: '검색어가 이스케이프 없이 응답에 출력돼, 스크립트가 피해자 브라우저에서 실행됩니다.',
     attack: 'q=<script>fetch(`/steal?c=${document.cookie}`)</script> 링크로 세션 탈취가 가능합니다.',
     fix: '출력 시 HTML 인코딩(ESAPI.encodeForHTML 등)을 적용하세요.',
@@ -136,6 +140,7 @@ const VULNS: Vulnerability[] = [
     cvssVector: 'AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N',
     location: 'CryptoUtil.encrypt()',
     evidence: `Cipher c = Cipher.getInstance("DES/ECB/PKCS5Padding");`,
+    plain: '오래되고 약한 암호 방식이라, 암호화를 해도 내용이 쉽게 풀릴 수 있어요.',
     summary: 'DES/ECB는 더 이상 안전하지 않은 약한 암호로, 평문 패턴이 노출됩니다.',
     attack: '짧은 키 공간과 ECB 모드의 블록 반복으로 오프라인 복호화가 현실적입니다.',
     fix: 'AES-256-GCM 같은 인증 암호화 모드를 사용하세요.',
@@ -147,6 +152,7 @@ const VULNS: Vulnerability[] = [
     cvssVector: 'AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:N/A:N',
     location: 'AuthController.setSession()',
     evidence: `Cookie c = new Cookie("SID", id); response.addCookie(c);`,
+    plain: '로그인 상태를 담은 쿠키에 보호 설정이 없어서, 중간에서 가로채여 계정을 도용당할 수 있어요.',
     summary: '세션 쿠키에 Secure/HttpOnly 플래그가 없어 평문 전송·스크립트 접근 위험이 있습니다.',
     attack: 'HTTP 다운그레이드나 XSS로 세션 쿠키를 탈취할 수 있습니다.',
     fix: 'setSecure(true), setHttpOnly(true)를 설정하고 SameSite=Lax 이상을 적용하세요.',
@@ -158,6 +164,7 @@ const VULNS: Vulnerability[] = [
     cvssVector: 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N',
     location: 'GET /download → file',
     evidence: `new File("/var/data/" + request.getParameter("file"));`,
+    plain: "파일 이름에 '../'를 넣으면, 서버 안의 비밀번호 파일 같은 내부 파일까지 내려받을 수 있어요.",
     summary: '파일 경로에 사용자 입력이 검증 없이 들어가, 임의 파일 읽기가 가능합니다.',
     attack: 'file=../../../../etc/passwd 로 서버 내부 파일을 내려받을 수 있습니다.',
     fix: 'getCanonicalPath()로 정규화 후 허용 디렉터리 내부인지 검사하세요.',
@@ -168,6 +175,7 @@ const VULNS: Vulnerability[] = [
     cvssVector: 'AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N',
     location: 'config/Soap.java:14',
     evidence: `String PW = "P@ssw0rd!"; auth("svc", PW);`,
+    plain: '비밀번호가 소스코드에 그대로 적혀 있어서, 코드를 본 사람이라면 누구나 바로 알 수 있어요.',
     summary: '소스코드에 자격증명이 하드코딩되어, 저장소 접근자가 그대로 탈취할 수 있습니다.',
     attack: '레포 유출 시 운영 계정이 즉시 노출됩니다.',
     fix: '비밀값을 환경변수·시크릿 매니저로 분리하세요.',
