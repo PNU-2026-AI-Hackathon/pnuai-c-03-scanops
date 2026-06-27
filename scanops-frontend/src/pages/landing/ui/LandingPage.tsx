@@ -99,10 +99,11 @@ export default function LandingPage() {
             <br />
             <span className="text-brand">안전한가요?</span>
           </h1>
-          <p className="mt-6 max-w-xl text-[16px] text-ink-sub leading-relaxed">
-            ChatGPT·Grok 같은 범용 AI가 놓치는 취약점까지 보안만 집중 학습한 <br />
-            ScanOps가 찾아냅니다. <br />
-            URL이나 GitHub 레포만 넣으면, 위험도와 고치는 방법까지 한국어 리포트로.
+          <p className="mt-6 max-w-xl text-[16px] text-ink-sub leading-relaxed [text-wrap:balance]">
+            ChatGPT·Grok 같은 범용 AI가 놓치는 취약점까지, 보안만 집중 학습한 ScanOps가 찾아냅니다.
+          </p>
+          <p className="mt-2 max-w-xl text-[16px] text-ink-sub leading-relaxed [text-wrap:balance]">
+            URL이나 GitHub 레포만 넣으면 위험도와 고치는 방법까지, 한국어 리포트로 알려드려요.
           </p>
           <div className="mt-9 flex flex-col sm:flex-row gap-3">
             <Button size="lg" rightIcon="arrow-right" onClick={() => navigate('/signup')}>무료로 스캔 시작하기</Button>
@@ -383,11 +384,11 @@ function ReportPreview() {
         </div>
         <p className="text-lg font-bold text-ink">https://shop.example.com</p>
 
-        <div className="mt-4 grid grid-cols-4 gap-2.5">
+        <div className="mt-4 grid grid-cols-4 gap-2 sm:gap-2.5">
           {summary.map((s) => (
-            <div key={s.label} className="rounded-xl bg-surface border border-line px-3 py-3">
-              <p className="text-[11px] text-ink-muted font-medium">{s.label}</p>
-              <p className="text-xl font-bold mt-0.5 tnum" style={{ color: s.color }}>{s.value}</p>
+            <div key={s.label} className="rounded-xl bg-surface border border-line px-2 py-2.5 sm:px-3 sm:py-3">
+              <p className="text-[10.5px] sm:text-[11px] text-ink-muted font-medium">{s.label}</p>
+              <p className="text-[16px] sm:text-xl font-bold mt-0.5 tnum" style={{ color: s.color }}>{s.value}</p>
             </div>
           ))}
         </div>
