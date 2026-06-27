@@ -266,27 +266,71 @@ function DomainVerify({
     )
   }
 
-  // pending / checking — 파일 안내 + 확인
+  // pending / checking — 단계별 안내
+  const filePath = vinfo?.path ?? '/.well-known/scanops-verify.txt'
+  const token = vinfo?.token ?? '…'
+  const publicPath = `public${filePath}`
+  const verifyUrl = `https://${vinfo?.domain ?? '도메인'}${filePath}`
+  const aiPrompt = `프로젝트의 public 폴더 안에 .well-known/scanops-verify.txt 파일을 만들고, 그 안에 정확히 "${token}" 한 줄만 넣어줘. 그리고 배포해줘.`
   return (
-    <div className="mt-4 rounded-xl border border-line bg-surface p-4">
-      <p className="text-[13px] font-semibold text-ink mb-2 flex items-center gap-1.5"><Icon name="file-text" size={15} /> 아래 파일을 도메인에 올린 뒤 “인증 확인”을 누르세요</p>
-      <Row label="파일 경로" value={vinfo?.path ?? '/.well-known/scanops-verify.txt'} onCopy={onCopy} />
-      <Row label="파일 내용 (토큰)" value={vinfo?.token ?? '…'} onCopy={onCopy} mono />
-      <div className="flex items-center gap-2 mt-3">
+    <div className="mt-4 rounded-xl border border-line bg-surface p-5">
+      <p className="text-[13.5px] font-bold text-ink mb-1 flex items-center gap-1.5"><Icon name="file-text" size={15} /> 도메인 소유권 인증 — 순서대로 따라 하기</p>
+      <p className="text-[12px] text-ink-muted mb-4">내 사이트가 진짜 내 것임을 확인하는 단계예요. 아래 3단계만 하면 끝나요.</p>
+      <div className="flex flex-col gap-4">
+        <Step n={1} title="인증 파일을 만드세요">
+          <p className="text-[12.5px] text-ink-muted mb-2 leading-relaxed">
+            내 프로젝트의 <code className="px-1 py-0.5 rounded bg-field text-ink-sub font-mono text-[11.5px]">public</code> 폴더 안에
+            아래 경로 그대로 파일을 새로 만드세요.
+            <br />Next.js·Vite·React·바이브코딩 템플릿 모두 <code className="px-1 py-0.5 rounded bg-field text-ink-sub font-mono text-[11.5px]">public/</code> 안의 파일을 사이트 주소 그대로 보여줘요.
+          </p>
+          <CodeCopy value={publicPath} onCopy={onCopy} />
+        </Step>
+        <Step n={2} title="그 파일 안에 이 토큰 한 줄만 붙여넣고 저장하세요">
+          <CodeCopy value={token} onCopy={onCopy} mono />
+        </Step>
+        <Step n={3} title="배포(deploy)한 뒤, 이 주소가 열리는지 확인하세요">
+          <a href={verifyUrl} target="_blank" rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-[12.5px] text-brand font-medium hover:underline break-all">
+            {verifyUrl} <Icon name="external-link" size={13} />
+          </a>
+          <p className="text-[12px] text-ink-muted mt-1">화면에 위 토큰이 그대로 보이면 준비 완료예요.</p>
+        </Step>
+      </div>
+
+      {/* 바이브코더용 — AI에게 그대로 시키기 */}
+      <div className="mt-4 rounded-lg bg-field border border-line p-3">
+        <p className="text-[12px] font-semibold text-ink-sub mb-1.5 flex items-center gap-1.5">
+          <Icon name="zap" size={13} /> 직접 만들기 어렵다면, Cursor·v0·Lovable 같은 AI에게 이렇게 말하세요
+        </p>
+        <CodeCopy value={aiPrompt} onCopy={onCopy} />
+      </div>
+
+      <div className="mt-4 pt-3.5 border-t border-line flex items-center gap-2.5">
         <Button size="sm" onClick={onCheck} loading={vstate === 'checking'} leftIcon="refresh-cw">인증 확인</Button>
-        <span className="text-[12px] text-ink-muted">예: https://{vinfo?.domain ?? '도메인'}{vinfo?.path}</span>
+        <span className="text-[12px] text-ink-muted">배포가 끝난 뒤 눌러주세요</span>
       </div>
     </div>
   )
 }
 
-function Row({ label, value, onCopy, mono }: { label: string; value: string; onCopy: (t: string) => void; mono?: boolean }) {
+function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 mt-1.5">
-      <span className="text-[12px] text-ink-muted w-[110px] shrink-0">{label}</span>
-      <code className={`flex-1 min-w-0 truncate rounded-lg bg-white border border-line px-2.5 py-1.5 text-[12px] text-ink-sub ${mono ? 'font-mono' : ''}`}>{value}</code>
-      <button type="button" onClick={() => onCopy(value)} className="w-8 h-8 rounded-lg border border-line flex items-center justify-center text-ink-muted hover:text-ink shrink-0" aria-label="복사">
-        <Icon name="copy" size={14} />
+    <div className="flex gap-3">
+      <span className="w-6 h-6 rounded-full bg-brand text-white text-[12px] font-bold flex items-center justify-center shrink-0">{n}</span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[13.5px] font-semibold text-ink mb-1.5">{title}</p>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function CodeCopy({ value, onCopy, mono }: { value: string; onCopy: (t: string) => void; mono?: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <code className={`flex-1 min-w-0 truncate rounded-lg bg-white border border-line px-3 py-2 text-[12.5px] text-ink-sub ${mono ? 'font-mono' : 'font-mono'}`}>{value}</code>
+      <button type="button" onClick={() => onCopy(value)} className="w-9 h-9 rounded-lg border border-line bg-white flex items-center justify-center text-ink-muted hover:text-ink shrink-0" aria-label="복사">
+        <Icon name="copy" size={15} />
       </button>
     </div>
   )
