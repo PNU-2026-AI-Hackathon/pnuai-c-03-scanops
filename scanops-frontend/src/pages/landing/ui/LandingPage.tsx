@@ -81,9 +81,16 @@ export default function LandingPage() {
 
       {/* Hero */}
       <header className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[560px] -z-10" style={{ background: 'radial-gradient(60% 100% at 50% 0%, #eaf2fe 0%, rgba(255,255,255,0) 70%)' }} />
-        <div className="max-w-5xl mx-auto px-6 pt-20 sm:pt-24 pb-12 text-center flex flex-col items-center">
-          <div className="mb-6 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-line text-[12.5px] font-semibold text-ink-sub shadow-[0px_1px_3px_rgba(0,0,0,0.05)]">
+        {/* <div className="pointer-events-none absolute inset-x-0 top-0 h-[560px] -z-10" style={{ background: 'radial-gradient(60% 100% at 50% 0%, #eaf2fe 0%, rgba(255,255,255,0) 70%)' }} /> */}
+        {/* <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-[560px] -z-0"
+          style={{
+            background:
+              'radial-gradient(50% 120% at 50% 0%, rgba(49,130,246,0.18) 0%, rgba(255,255,255,0) 60%)',
+          }}
+        /> */}
+        <div className="max-w-5xl mx-auto px-6 pt-20 relative z-10 sm:pt-24 pb-12 text-center flex flex-col items-center">
+          <div className="mb-6 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-soft border border-line text-[12.5px] font-semibold text-ink-sub shadow-[0px_1px_3px_rgba(0,0,0,0.05)]">
             <span className="text-brand"><Icon name="shield" size={14} /></span>
             OWASP 표준 벤치마크에서 상용 Grok-3 초월
           </div>
@@ -92,8 +99,9 @@ export default function LandingPage() {
             <br />
             <span className="text-brand">안전한가요?</span>
           </h1>
-          <p className="mt-6 max-w-xl text-[17px] text-ink-sub leading-relaxed">
-            ChatGPT·Grok 같은 범용 AI가 놓치는 취약점까지 — 보안만 집중 학습한 ScanOps가 찾아냅니다.
+          <p className="mt-6 max-w-xl text-[16px] text-ink-sub leading-relaxed">
+            ChatGPT·Grok 같은 범용 AI가 놓치는 취약점까지 보안만 집중 학습한 <br />
+            ScanOps가 찾아냅니다. <br />
             URL이나 GitHub 레포만 넣으면, 위험도와 고치는 방법까지 한국어 리포트로.
           </p>
           <div className="mt-9 flex flex-col sm:flex-row gap-3">
@@ -103,13 +111,13 @@ export default function LandingPage() {
           <p className="mt-4 text-[13px] text-ink-muted">가입하면 웹사이트 보안검사 1회 무료 · 카드 등록 없이 시작</p>
         </div>
 
-        <div className="max-w-4xl mx-auto px-6 pb-4">
+        <div className="max-w-4xl mx-auto px-6 pb-[120px]">
           <ReportPreview />
         </div>
       </header>
 
       {/* Stats */}
-      <section className="py-12 border-y border-line bg-surface">
+      <section className="py-[120px] border-y border-line bg-surface">
         <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
           {stats.map((s) => (
             <div key={s.label}>
@@ -121,7 +129,7 @@ export default function LandingPage() {
       </section>
 
       {/* Benchmark */}
-      <section id="benchmark" className="py-24 px-6">
+      <section id="benchmark" className="py-[120px] px-6">
         <div className="max-w-5xl mx-auto">
           <SectionHeading tag="성능" title="범용 AI보다 더 잡고, 덜 틀립니다" sub="같은 코드를 넣어도 결과가 다릅니다. 보안에만 특화 학습된 ScanOps는 더 많이 찾고, 덜 틀립니다. 우리가 만들지 않은 외부 표준 평가셋으로 검증했어요." />
           <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -134,7 +142,7 @@ export default function LandingPage() {
                 <Legend color="var(--color-line-strong)" label="Grok-3-mini (상용)" />
               </div>
             </div>
-            <div className="rounded-2xl bg-ink p-7 flex flex-col justify-between">
+            <div className="rounded-2xl bg-ink p-7 flex flex-col self-start">
               <div>
                 <p className="text-sm font-bold text-white flex items-center gap-2"><Icon name="trending-down" size={16} /> 오탐은 더 적게</p>
                 <p className="text-xs text-ink-faint mt-1.5 leading-relaxed">‘안전한 코드를 위험하다고 잘못 경고’하는 오탐이 적을수록, 진짜 위험에 집중할 수 있어요.</p>
@@ -156,7 +164,7 @@ export default function LandingPage() {
       </section>
 
       {/* Why security-specialized */}
-      <section id="why" className="py-24 px-6 bg-surface border-y border-line">
+      <section id="why" className="py-[120px] px-6 bg-surface border-y border-line">
         <div className="max-w-5xl mx-auto">
           <SectionHeading tag="왜 다른가" title="작지만, 보안에선 더 정확합니다" sub="범용 대형 모델을 따라 크기를 키우는 대신, 보안 하나에 집중했습니다. 그게 더 잘 찾는 길이었어요." />
           <div className="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -172,7 +180,7 @@ export default function LandingPage() {
       </section>
 
       {/* Code security */}
-      <section id="security" className="py-24 px-6">
+      <section id="security" className="py-[120px] px-6">
         <div className="max-w-5xl mx-auto">
           <SectionHeading tag="코드 보안" title="소스코드는 서버로 오지 않습니다" sub="가장 강력한 보안은 정책이 아니라 구조입니다. ScanOps는 코드가 외부로 나가지 않도록 설계됐습니다." />
           <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -197,7 +205,7 @@ export default function LandingPage() {
       </section>
 
       {/* Scan modes */}
-      <section className="py-24 px-6 bg-surface border-y border-line">
+      <section className="py-[120px] px-6 bg-surface border-y border-line">
         <div className="max-w-5xl mx-auto">
           <SectionHeading tag="3가지 스캔 방식" title="웹부터 레포, PR까지 한 번에" sub="검사 대상과 상황에 맞는 방식을 선택하세요. 사용량은 방식별로 투명하게 관리됩니다." />
           <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -216,7 +224,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing teaser */}
-      <section id="pricing" className="py-24 px-6">
+      <section id="pricing" className="py-[120px] px-6">
         <div className="max-w-5xl mx-auto">
           <SectionHeading tag="요금제" title="필요한 만큼만, 합리적으로" sub="회원가입하면 DAST 1회를 무료로 체험할 수 있어요. Pro는 7일 무료체험을 제공하며, 언제든 해지할 수 있습니다." />
           <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
@@ -253,7 +261,7 @@ export default function LandingPage() {
       </section>
 
       {/* GitHub App CTA */}
-      <section className="py-24 px-6 bg-surface border-y border-line">
+      <section className="py-[120px] px-6 bg-surface border-y border-line">
         <div className="max-w-2xl mx-auto text-center">
           <div className="mb-5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-soft text-purple text-xs font-bold">
             <Icon name="github" size={14} /> GitHub App
@@ -267,7 +275,7 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="px-6 py-24">
+      <section className="px-6 py-[120px]">
         <div className="max-w-5xl mx-auto rounded-3xl bg-ink px-8 py-16 text-center relative overflow-hidden">
           <div className="pointer-events-none absolute inset-0 -z-0" style={{ background: 'radial-gradient(50% 120% at 50% 0%, rgba(49,130,246,0.25) 0%, rgba(0,0,0,0) 60%)' }} />
           <div className="relative">

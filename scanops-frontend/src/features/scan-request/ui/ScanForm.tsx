@@ -131,7 +131,7 @@ export default function ScanForm() {
                   <div>
                     <p className="text-[13.5px] font-semibold text-ink">소유권 인증 완료</p>
                     <p className="text-[12px] text-ink-sub">
-                      {isRepo ? '연결된 GitHub 계정으로 소유 확인됨' : 'DNS TXT 레코드로 도메인 소유 확인됨'}
+                      {isRepo ? '연결된 GitHub 계정으로 소유 확인됨' : '.well-known 파일로 도메인 소유 확인됨'}
                     </p>
                   </div>
                 </div>

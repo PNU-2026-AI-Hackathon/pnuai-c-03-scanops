@@ -8,6 +8,7 @@ import Icon from '../../../shared/ui/Icon'
 import { useAuth } from '../../../shared/lib/auth'
 import { useToast } from '../../../shared/ui/Toast'
 import { fetchGitHubRepos, relativeTime, type GitHubRepo } from '../../../shared/lib/mock'
+import { GITHUB_APP_INSTALL_URL } from '../../../shared/lib/config'
 
 export default function IntegrationsPage() {
   const navigate = useNavigate()
@@ -64,7 +65,7 @@ export default function IntegrationsPage() {
               </div>
               <p className="text-[13px] text-ink-muted mt-0.5">설치하면 PR을 올릴 때마다 변경된 코드를 자동으로 검사하고 댓글로 결과를 남겨요.</p>
             </div>
-            <Button variant="outline" size="sm" rightIcon="external-link" onClick={() => toast('GitHub App 설치 페이지로 이동합니다')}>App 설치</Button>
+            <Button variant="outline" size="sm" rightIcon="external-link" onClick={() => window.open(GITHUB_APP_INSTALL_URL, '_blank', 'noopener')}>App 설치</Button>
           </div>
         </Card>
 
