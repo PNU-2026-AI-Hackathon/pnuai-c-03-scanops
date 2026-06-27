@@ -1,5 +1,6 @@
 import { http } from './httpClient'
 import { fetchScans } from '../lib/mock'
+import { enrichZap } from '../lib/zapMeta'
 import type { Report, ScanSummary, Severity, SeverityCounts, Vulnerability } from '../lib/mock'
 
 /** 실 백엔드 스캔 API (DAST/웹). SAST·PR은 아직 목(shared/lib/mock). */
@@ -57,19 +58,21 @@ function mapSeverity(risk?: string, cvss?: number | null): Severity {
 
 function mapVuln(v: BeVuln): Vulnerability {
   const cvss = v.cvssScore ?? 0
+  const meta = enrichZap(v.vulnType || '') // 흔한 ZAP 경보 → 한국어 메타
   return {
     id: v.id,
-    name: v.vulnType || '취약점',
-    cwe: '',
+    name: meta?.name ?? v.vulnType ?? '취약점',
+    cwe: meta?.cwe ?? '',
     severity: mapSeverity(v.riskLevel, cvss),
     cvss,
     cvssVector: v.cvssVector ?? '',
     location: [v.url, v.parameter].filter(Boolean).join(' → '),
     evidence: '',
-    plain: v.aiAnalysis ?? '', // AI가 풀어 쓴 설명 → "쉽게 말하면"
-    summary: v.summary ?? '',
-    attack: v.description ?? '',
-    fix: v.solution ?? '',
+    // "쉽게 말하면": 사전 한 줄 → 백엔드 AI설명 순
+    plain: meta?.plain ?? v.aiAnalysis ?? '',
+    summary: meta?.summary ?? v.summary ?? '',
+    attack: meta?.attack ?? v.description ?? '',
+    fix: meta?.fix ?? v.solution ?? '',
     aiModel: v.aiModel ? `ZAP + AI(${v.aiModel})` : 'ZAP',
     confidence: 1,
     graphVerdict: 'LLM_ONLY',
