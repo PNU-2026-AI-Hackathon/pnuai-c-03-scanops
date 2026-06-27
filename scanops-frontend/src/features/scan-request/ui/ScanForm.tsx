@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import Icon from '../../../shared/ui/Icon'
 import Button from '../../../shared/ui/Button'
 import Card from '../../../shared/ui/Card'
@@ -26,10 +26,13 @@ const extractOwner = (repo: string): string | null => {
 
 export default function ScanForm() {
   const navigate = useNavigate()
+  const location = useLocation()
+  // 연동 페이지 등에서 레포/모드를 넘겨주면 미리 채운다.
+  const prefill = location.state as { mode?: ScanMode; target?: string } | null
   const { user } = useAuth()
   const { toast } = useToast()
-  const [mode, setMode] = useState<ScanMode>('WEBSITE')
-  const [target, setTarget] = useState('')
+  const [mode, setMode] = useState<ScanMode>(prefill?.mode ?? 'WEBSITE')
+  const [target, setTarget] = useState(prefill?.target ?? '')
   const [email, setEmail] = useState(user?.email ?? '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

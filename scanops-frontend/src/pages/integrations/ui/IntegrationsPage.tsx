@@ -7,26 +7,34 @@ import Badge from '../../../shared/ui/Badge'
 import Icon from '../../../shared/ui/Icon'
 import { useAuth } from '../../../shared/lib/auth'
 import { useToast } from '../../../shared/ui/Toast'
-import { fetchGitHubRepos, relativeTime, type GitHubRepo } from '../../../shared/lib/mock'
+import { relativeTime } from '../../../shared/lib/mock'
+import { fetchMyGithubRepos, type MyGithubRepo } from '../../../shared/api/scan'
 import { GITHUB_APP_INSTALL_URL } from '../../../shared/lib/config'
 
 export default function IntegrationsPage() {
   const navigate = useNavigate()
   const { user, update } = useAuth()
   const { toast } = useToast()
-  const [repos, setRepos] = useState<GitHubRepo[] | null>(null)
+  const [repos, setRepos] = useState<MyGithubRepo[] | null>(null)
+  const [error, setError] = useState('')
   const [q, setQ] = useState('')
   const connected = !!user?.githubLogin
 
-  useEffect(() => { fetchGitHubRepos().then(setRepos) }, [])
-
-  const toggle = (id: number) => {
-    setRepos((rs) => rs?.map((r) => (r.id === id ? { ...r, connected: !r.connected } : r)) ?? rs)
-    const r = repos?.find((x) => x.id === id)
-    toast(r?.connected ? '연동을 해제했어요' : '레포를 연동했어요', 'success')
-  }
+  useEffect(() => {
+    if (!connected) { setRepos(null); return }
+    let alive = true
+    setRepos(null)
+    setError('')
+    fetchMyGithubRepos()
+      .then((r) => { if (alive) setRepos(r) })
+      .catch(() => { if (alive) setError('GitHub 레포 목록을 불러오지 못했어요.') })
+    return () => { alive = false }
+  }, [connected, user?.githubLogin])
 
   const filtered = repos?.filter((r) => r.fullName.toLowerCase().includes(q.toLowerCase()))
+
+  const scanRepo = (r: MyGithubRepo) =>
+    navigate('/scan', { state: { mode: 'GITHUB_REPO', target: r.htmlUrl ?? `https://github.com/${r.fullName}` } })
 
   return (
     <div className="min-h-screen bg-surface">
@@ -71,8 +79,11 @@ export default function IntegrationsPage() {
 
         {/* Repositories */}
         <div className="flex items-center justify-between mt-8 mb-3">
-          <h2 className="text-[17px] font-bold text-ink">레포지토리</h2>
-          {connected && (
+          <div>
+            <h2 className="text-[17px] font-bold text-ink">내 레포지토리</h2>
+            <p className="text-[12.5px] text-ink-muted mt-0.5">내가 소유한 공개 레포는 바로 SAST 스캔할 수 있어요.</p>
+          </div>
+          {connected && repos && repos.length > 0 && (
             <div className="relative w-[220px]">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint"><Icon name="search" size={16} /></span>
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="레포 검색"
@@ -86,8 +97,18 @@ export default function IntegrationsPage() {
             <span className="inline-flex w-14 h-14 rounded-2xl bg-field text-ink-muted items-center justify-center mb-3"><Icon name="github" size={26} /></span>
             <p className="text-sm text-ink-muted">GitHub를 연결하면 레포 목록이 표시돼요.</p>
           </Card>
+        ) : error ? (
+          <Card pad="lg" className="text-center py-12">
+            <span className="inline-flex w-14 h-14 rounded-2xl bg-danger-soft text-danger items-center justify-center mb-3"><Icon name="alert-triangle" size={26} /></span>
+            <p className="text-sm text-ink-muted">{error}</p>
+          </Card>
         ) : !filtered ? (
           <div className="flex flex-col gap-2.5">{[0, 1, 2].map((i) => <div key={i} className="h-16 rounded-2xl skeleton" />)}</div>
+        ) : filtered.length === 0 ? (
+          <Card pad="lg" className="text-center py-12">
+            <span className="inline-flex w-14 h-14 rounded-2xl bg-field text-ink-muted items-center justify-center mb-3"><Icon name="box" size={26} /></span>
+            <p className="text-sm text-ink-muted">{q ? '검색 결과가 없어요.' : '소유한 공개 레포가 없어요.'}</p>
+          </Card>
         ) : (
           <div className="flex flex-col gap-2.5">
             {filtered.map((r) => (
@@ -98,12 +119,12 @@ export default function IntegrationsPage() {
                     <p className="text-[14px] font-semibold text-ink truncate">{r.fullName}</p>
                     {r.private ? <Icon name="lock" size={13} className="text-ink-faint" /> : <Badge tone="neutral" size="sm">public</Badge>}
                   </div>
-                  <p className="text-[12px] text-ink-muted">{r.lastScan ? `마지막 스캔 ${relativeTime(r.lastScan)}` : '스캔한 적 없음'} · {r.defaultBranch}</p>
+                  <p className="text-[12px] text-ink-muted">
+                    {r.language ? `${r.language} · ` : ''}{r.defaultBranch}
+                    {r.pushedAt ? ` · ${relativeTime(r.pushedAt)} 업데이트` : ''}
+                  </p>
                 </div>
-                {r.connected && <Button size="sm" variant="weak" leftIcon="target" onClick={() => navigate('/scan')}>스캔</Button>}
-                <Button size="sm" variant={r.connected ? 'ghost' : 'outline'} onClick={() => toggle(r.id)}>
-                  {r.connected ? '연동됨' : '연동'}
-                </Button>
+                <Button size="sm" variant="weak" leftIcon="target" onClick={() => scanRepo(r)}>스캔</Button>
               </Card>
             ))}
           </div>

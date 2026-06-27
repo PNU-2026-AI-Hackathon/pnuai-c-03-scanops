@@ -18,5 +18,8 @@ export async function http<T>(path: string, init?: RequestInit): Promise<T> {
     } catch { /* ignore parse errors */ }
     throw new Error(errorMsg)
   }
-  return res.json() as Promise<T>
+  // 204 No Content(삭제 등)나 빈 본문이면 파싱하지 않는다.
+  if (res.status === 204) return undefined as T
+  const text = await res.text()
+  return (text ? JSON.parse(text) : undefined) as T
 }

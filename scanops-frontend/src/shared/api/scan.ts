@@ -1,7 +1,7 @@
 import { http } from './httpClient'
 import { fetchScans } from '../lib/mock'
 import { enrichZap } from '../lib/zapMeta'
-import type { Report, ScanSummary, Severity, SeverityCounts, Vulnerability } from '../lib/mock'
+import type { Report, ScanMode, ScanSummary, Severity, SeverityCounts, Vulnerability } from '../lib/mock'
 
 /** 실 백엔드 스캔 API (DAST/웹). SAST·PR은 아직 목(shared/lib/mock). */
 
@@ -43,7 +43,69 @@ export const createWebsiteScan = (targetUrl: string, ownerEmail: string) =>
 
 export const getScanJob = (id: string) => http<BeScanJob>(`/api/scans/${id}`)
 export const getScanVulns = (id: string) => http<BeVuln[]>(`/api/scans/${id}/vulnerabilities`)
-export const listScanJobs = () => http<BeScanJob[]>('/api/scans')
+
+/** Spring Data Page 응답(필요한 필드만). */
+interface SpringPage<T> {
+  content: T[]
+  number: number        // 0-based 현재 페이지
+  totalPages: number
+  totalElements: number
+  first: boolean
+  last: boolean
+}
+
+/** 대시보드 등 "최근 스캔" 요약용 — 첫 페이지(최신 50건). 기록 페이지는 fetchScansPage 사용. */
+export const listScanJobs = async () =>
+  (await http<SpringPage<BeScanJob>>('/api/scans?page=0&size=50')).content
+
+/** 스캔 기록 한 페이지(최신순). 백엔드가 page/size/mode/q로 페이지네이션. */
+export interface ScanPage {
+  items: ScanSummary[]
+  page: number
+  totalPages: number
+  totalElements: number
+  first: boolean
+  last: boolean
+}
+
+export async function fetchScansPage(opts: {
+  page: number
+  size?: number
+  mode?: ScanMode | 'ALL'
+  q?: string
+}): Promise<ScanPage> {
+  const { page, size = 10, mode = 'ALL', q = '' } = opts
+  const params = new URLSearchParams({ page: String(page), size: String(size) })
+  if (mode && mode !== 'ALL') params.set('mode', mode)
+  if (q.trim()) params.set('q', q.trim())
+  const res = await http<SpringPage<BeScanJob>>(`/api/scans?${params.toString()}`)
+  return {
+    items: res.content.map((j) => mapJobToSummary(j)),
+    page: res.number,
+    totalPages: res.totalPages,
+    totalElements: res.totalElements,
+    first: res.first,
+    last: res.last,
+  }
+}
+
+/** 스캔 기록 삭제(연결된 취약점도 백엔드에서 함께 제거). */
+export const deleteScan = (id: string) =>
+  http<void>(`/api/scans/${id}`, { method: 'DELETE' })
+
+// ── GitHub 레포(실데이터) ────────────────────────────────────────────────
+export interface MyGithubRepo {
+  id: number
+  fullName: string
+  private: boolean
+  defaultBranch: string
+  htmlUrl?: string
+  language?: string | null
+  pushedAt?: string | null
+}
+
+/** 로그인 사용자가 소유한 GitHub 공개 레포 목록. */
+export const fetchMyGithubRepos = () => http<MyGithubRepo[]>('/api/github/repos')
 
 // ── mappers ───────────────────────────────────────────────────────────────
 function mapSeverity(risk?: string, cvss?: number | null): Severity {
