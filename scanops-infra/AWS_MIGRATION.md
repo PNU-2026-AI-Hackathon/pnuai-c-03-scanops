@@ -3,6 +3,8 @@
 > **핵심 요약: 코드 수정은 거의 없다. 전부 "환경변수 + 배포 설정"이다.**
 > ZAP 연동, 모델 호출 등은 이미 환경변수로 추상화돼 있어서 Java/Python 코드는 안 건드려도 된다.
 > 바로 실행하려면 → [`docker-compose.aws.yml`](./docker-compose.aws.yml) + [`.env.aws.example`](./.env.aws.example)
+>
+> **구조·비용 근거와 컴포넌트별 AWS 선택은** → [`AWS_PLAN_백엔드전달.md`](./AWS_PLAN_백엔드전달.md) (이 문서는 실제 배포/환경변수/네트워크 레퍼런스)
 
 ---
 
@@ -53,7 +55,8 @@ CORS_ALLOWED_ORIGINS                       # 프론트 도메인
 ```
 QDRANT_URL=http://qdrant:6333, QDRANT_COLLECTION=cve_vulnerabilities
 OLLAMA_URL=http://ollama:11434/api/generate
-OLLAMA_MODEL=qwen2.5-coder-security-v11    # ★ v4 → v11(3B) 교체 예정
+OLLAMA_MODEL=qwen2.5-coder-security-v11    # 코드 기본값. 다르면 이 env로 override
+OLLAMA_BASE_MODEL=qwen2.5-coder:3b         # RAG 폴백 base 모델
 SCANOPS_API_KEY                            # backend와 동일
 XAI_API_KEY                                # Grok 번역/폴백(선택)
 ```
@@ -62,35 +65,47 @@ XAI_API_KEY                                # Grok 번역/폴백(선택)
 
 ## 4. 사용 모델
 
-- 현재 production: `qwen2.5-coder-security-v4` (1.5B, ~1GB)
-- **교체 예정: `qwen2.5-coder-security-v11` (3B, ~2GB)** — 탐지력·CWE 식별 대폭 향상.
-  세한이가 GGUF 변환·Ollama 등록 후 `OLLAMA_MODEL` 값만 바꾸면 됨.
-- GPU **불필요** (양자화 모델 CPU 구동).
+- **production: `qwen2.5-coder-security-v11` (3B, Q4 GGUF ~3GB)** — 탐지력·CWE 식별 대폭 향상.
+- 코드 기본값 갱신 완료(2026-06-29): `api_server.py`·`rag.py`가 v11/3B를 기본으로 쓰고 env로 override 가능.
+  - `OLLAMA_MODEL` (기본 `qwen2.5-coder-security-v11:latest`)
+  - `OLLAMA_BASE_MODEL` (기본 `qwen2.5-coder:3b`)
+- **서빙은 GPU on-demand 권장.** CPU로도 구동되지만(Q4 양자화), 스캔이 4~5배 느림. on-demand에선 GPU가 스캔당 비용도 더 쌈 → §5 참고.
 
 ---
 
-## 5. AWS EC2 인스턴스
+## 5. AWS 구성 — 3블록 (상시 1 + on-demand 2)
 
-**MVP(전부 한 대): `t3.xlarge` (4 vCPU, 16GB) — 온디맨드 ~$120/월, 1년 예약 ~$75/월**
+**"항상 켜둘 가벼운 것은 작은 박스에 합치고, 스캔 때만 도는 무거운 것은 켰다 끈다."**
 
-| 서비스 | 메모리 |
-|---|---|
-| Ollama + 3B 모델 | ~3GB |
-| ZAP (스캔 중) | ~2GB |
-| Spring backend | ~1GB |
-| Qdrant | ~0.5GB |
-| Postgres(컨테이너) | ~0.5GB |
-| 여유 | ~9GB |
+```
+[상시 ON · 작은 박스]              [스캔 때만 ON · on-demand]
+┌────────────────────────┐        ┌─────────────────────────────┐
+│ backend / postgres /   │  스캔시 │ model-server + ollama       │
+│ qdrant   (t3.small/med)│ ─기동→ │ (GPU · g4dn.xlarge)         │
+│                        │  스캔시 │ ZAP (CPU · c5.large/Fargate)│
+└────────────────────────┘ ─기동→ └─────────────────────────────┘
+```
 
-- t3.large(8GB)는 ZAP 스캔+모델 동시면 **빠듯** → t3.xlarge 권장.
+| 블록 | 담는 것 | 가동 | 인스턴스 | 비용 |
+|---|---|---|---|---|
+| **A 상시** | backend + postgres + qdrant | 24시간 | `t3.medium`(2vCPU/4GB) ※t3.small이면 ~$20 | ~$35/월 |
+| **B 모델** | model-server + ollama | 스캔 시만 | `g4dn.xlarge`(T4 16GB), **spot 권장** | 가동분만 ~$3/월 |
+| **C ZAP** | zap | 스캔 시만 | `c5.large` 또는 Fargate | 가동분만 ~$2/월 |
+
+**평상시 합계 ~$40~45/월** (+ EBS 30GB ~$3).
+
+- **왜 GPU on-demand?** 스캔은 켰다 끄는 작업이라, GPU가 시간당 비싸도 추론이 4~5배 빨리 끝나 **스캔당 비용은 오히려 더 쌈**(GPU ~$0.032 vs CPU ~$0.052/scan). spot이면 ~70% 추가 절감.
+- **왜 B·C 분리?** ZAP은 GPU 안 쓰는 CPU 작업이고 길게 돎 → GPU 박스에 합치면 비싼 GPU가 노는 동안 과금. 따로 둠. (backend와 ZAP도 박스가 달라 스캔이 backend를 안 막음.)
+- **콜드 스타트**: 부팅+모델 로딩 1~3분(PR/SAST는 비동기라 OK). GPU 박스는 terminate 말고 **stop**으로 꺼야 모델·EBS 유지되어 재기동 빠름. 더 빠르게는 모델 구운 커스텀 AMI 사용.
 - OS: **Ubuntu 22.04**, 디스크 **30GB+**, 리전 **ap-northeast-2(서울)**.
+- (대안) 운영 단순함이 최우선이면 **t3.xlarge 한 대에 전부 CPU, 24시간**(~$120/월, 예약 $75)도 가능하나 더 비싸고 스캔 ~6분으로 느림.
 
 ---
 
 ## 6. Ollama 모델 등록 (최초 1회)
 
 기존 dev compose엔 Ollama가 없었음(로컬 brew). AWS는 컨테이너로 추가됨(`docker-compose.aws.yml`).
-GGUF 파일(`qwen-security-v11.Q4_K_M.gguf`)과 `Modelfile`을 `scanops-infra/models/`에 두고:
+**블록B(GPU) 박스에서** GGUF 파일(`qwen-security-v11.Q4_K_M.gguf`)과 `Modelfile`을 `scanops-infra/models/`에 두고:
 ```bash
 docker compose -f docker-compose.aws.yml exec ollama \
   ollama create qwen2.5-coder-security-v11 -f /models/Modelfile_v11
@@ -101,9 +116,8 @@ docker compose -f docker-compose.aws.yml exec ollama \
 
 ## 7. ⚠️ ZAP — 비용·보안 최대 주의
 
-- **메모리/CPU 폭식**: 능동 스캔 1건 1~2GB + CPU 100%, 수분~수십분. 모델이랑 같은 박스면 스캔 중 API 느려짐.
-- **MVP**: 같은 EC2에 두되 **동시 스캔 제한**(플랜별 DAST 횟수 제한이 안전장치).
-- **확장**: ZAP을 **ECS Fargate on-demand**로 빼서 스캔 시에만 띄우고 종료 → 비용 절감.
+- **메모리/CPU 폭식**: 능동 스캔 1건 1~2GB + CPU 100%, 수분~수십분. backend·모델과 같은 박스면 스캔 중 다 느려짐.
+- **기본(권장)**: ZAP은 **블록C로 분리**해 on-demand(스캔 시 기동→종료). `c5.large` EC2 또는 ECS Fargate 태스크. 동시 스캔 제한(플랜별 DAST 횟수)도 안전장치로 둠.
 - **🔒 보안 필수**: ZAP API(8090)는 API 키 1개뿐 → **외부 절대 노출 금지**. compose에 `ports` 매핑 안 함(내부 전용).
 
 ---
@@ -125,15 +139,16 @@ ZAP : 고객 도메인 스캔용 (소유권 인증 통과 도메인만)
 
 ## 9. 배포 순서
 
-1. EC2 t3.xlarge(Ubuntu 22.04, 30GB) 생성 + Docker/Compose 설치
-2. 세 레포 같은 부모 폴더에 clone (`scanops-infra`, `scanops-backend`, `scanops-model`)
-3. `scanops-infra/.env.aws` 작성
-4. `docker compose -f docker-compose.aws.yml --env-file .env.aws up -d --build`
-5. Ollama 모델 등록(§6), Qdrant에 CVE 적재(`python -m scanops.data.prepare`)
-6. 보안그룹: 80/443만 열기
-7. 도메인 + ALB(또는 nginx) + HTTPS(ACM 인증서)
-8. 프론트 `VITE_API_URL` → AWS backend 주소로 변경 (코드 수정 없음)
-9. (안정화 후) Postgres → **RDS** 분리, ZAP → on-demand 분리
+1. **블록A** EC2(t3.medium, Ubuntu 22.04, 30GB) 생성 + Docker/Compose 설치
+2. 세 레포 같은 부모 폴더에 clone (`scanops-infra`, `scanops-backend`, `scanops-model`), `scanops-infra/.env.aws` 작성
+3. 블록A: `backend + postgres + qdrant`만 compose up (`docker compose -f docker-compose.aws.yml --env-file .env.aws up -d --build <서비스명>`)
+4. **블록B** GPU AMI 준비(g4dn, 모델 구운 스냅샷) + Ollama 모델 등록(§6) / **블록C** ZAP 이미지
+5. Qdrant에 CVE 적재(`python -m scanops.data.prepare`)
+6. backend에 블록B·C **start/stop 오케스트레이션**(스캔 시 기동→유휴 시 종료, `boto3`) 추가
+7. 보안그룹: 80/443만 외부, 나머지 내부 전용
+8. 도메인 + ALB(또는 nginx) + HTTPS(ACM 인증서)
+9. 프론트 `VITE_API_URL` → AWS backend 주소로 변경 (코드 수정 없음)
+10. (안정화 후) Postgres → **RDS**, ZAP → **Fargate**, 모델 → **AWS Batch** 자동화
 
 ---
 
