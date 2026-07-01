@@ -9,7 +9,7 @@ export const GITHUB_APP_INSTALL_URL = `https://github.com/apps/${GITHUB_APP_SLUG
 
 // 배포 도메인 (참고용)
 export const FRONTEND_URL = 'https://scanops-frontend.vercel.app'
-export const BACKEND_URL = 'https://scanops-backend-production.up.railway.app'
+export const BACKEND_URL = 'https://scanops-backend.kr'
 
 // 백엔드 API 베이스 (env 우선, 없으면 로컬)
 export const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'

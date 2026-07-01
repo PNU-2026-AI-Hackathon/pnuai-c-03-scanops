@@ -3,7 +3,11 @@ import { fetchScans } from '../lib/mock'
 import { enrichZap } from '../lib/zapMeta'
 import type { Report, ScanMode, ScanSummary, Severity, SeverityCounts, Vulnerability } from '../lib/mock'
 
-/** 실 백엔드 스캔 API (DAST/웹). SAST·PR은 아직 목(shared/lib/mock). */
+/**
+ * 실 백엔드 스캔 API.
+ * - DAST(웹) / SAST(레포)는 실제 백엔드 스캔.
+ * - PR 분석은 프론트가 호출하지 않는다 — GitHub App 웹훅이 서버에서 자동 처리.
+ */
 
 interface BeScanJob {
   id: string
@@ -39,6 +43,23 @@ export const createWebsiteScan = (targetUrl: string, ownerEmail: string) =>
   http<BeScanJob>('/api/scans', {
     method: 'POST',
     body: JSON.stringify({ targetUrl, ownerEmail, scanMode: 'WEBSITE' }),
+  })
+
+/**
+ * GitHub 레포 입력을 백엔드가 요구하는 https://github.com/owner/repo 형태로 정규화.
+ * 폼은 짧은 형식(acme/payments-api) 또는 github.com URL 둘 다 허용한다.
+ */
+const toGithubUrl = (repo: string) => {
+  const t = repo.trim().replace(/^\/+/, '')
+  if (/github\.com/i.test(t)) return t.startsWith('http') ? t : `https://${t}`
+  return `https://github.com/${t}`
+}
+
+/** SAST — 실제 백엔드 레포 코드 분석(QLoRA 모델 파이프라인). */
+export const createRepoScan = (repo: string, ownerEmail: string) =>
+  http<BeScanJob>('/api/scans', {
+    method: 'POST',
+    body: JSON.stringify({ targetUrl: toGithubUrl(repo), ownerEmail, scanMode: 'GITHUB_REPO' }),
   })
 
 export const getScanJob = (id: string) => http<BeScanJob>(`/api/scans/${id}`)

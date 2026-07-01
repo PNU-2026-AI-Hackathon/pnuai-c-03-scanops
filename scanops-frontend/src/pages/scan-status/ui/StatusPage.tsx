@@ -56,7 +56,7 @@ export default function StatusPage() {
       timer = setTimeout(poll, 700)
       return () => { stopped = true; clearTimeout(timer) }
     }
-    // 목 시뮬레이션 (SAST/PR)
+    // 목 시뮬레이션 — 데모용 목 리포트 id(예: s-1039)로 들어온 경우에만
     const t = setInterval(() => {
       setProgress((p) => {
         const next = p + Math.random() * 9 + 4

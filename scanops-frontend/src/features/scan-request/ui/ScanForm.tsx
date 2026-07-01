@@ -8,7 +8,7 @@ import { useToast } from '../../../shared/ui/Toast'
 import { MODE_META, type ScanMode } from '../../../shared/lib/mock'
 import { useAuth } from '../../../shared/lib/auth'
 import { initDomainVerify, confirmDomainVerify, type DomainVerifyInit } from '../../../shared/api/verify'
-import { createWebsiteScan } from '../../../shared/api/scan'
+import { createWebsiteScan, createRepoScan } from '../../../shared/api/scan'
 
 const ORDER: ScanMode[] = ['WEBSITE', 'GITHUB_REPO', 'GITHUB_ACTIONS']
 const SUB: Record<ScanMode, string> = {
@@ -101,9 +101,9 @@ export default function ScanForm() {
         const job = await createWebsiteScan(target, email || user?.email || 'noreply@scanops.io')
         navigate(`/scan/${job.id}/status`, { state: { target, mode } })
       } else {
-        // SAST/PR은 모델 마이그레이션 전까지 목
-        await new Promise((r) => setTimeout(r, 600))
-        navigate(`/scan/s-new/status`, { state: { target, mode } })
+        // SAST(레포)도 실제 백엔드(QLoRA 모델) 스캔
+        const job = await createRepoScan(target, email || user?.email || 'noreply@scanops.io')
+        navigate(`/scan/${job.id}/status`, { state: { target, mode } })
       }
     } catch {
       setError('스캔 요청에 실패했어요. 백엔드 연결 상태를 확인해 주세요.')
