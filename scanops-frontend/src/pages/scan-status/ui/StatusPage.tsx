@@ -43,7 +43,7 @@ export default function StatusPage() {
       const poll = async () => {
         try {
           const job = await getScanJob(id)
-          if (job.status === 'DONE') {
+          if (job.status === 'COMPLETED') {
             setProgress(100)
             setTimeout(() => navigate(`/report/${id}`, { replace: true }), 500)
             return

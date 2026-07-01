@@ -10,30 +10,30 @@ import type { Report, ScanMode, ScanSummary, Severity, SeverityCounts, Vulnerabi
  */
 
 interface BeScanJob {
-  id: string
-  targetUrl: string
-  status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED'
-  ownerEmail?: string
+  scanId: string
+  target: string
+  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED'
+  scanCategory?: 'DAST' | 'SAST'
   verified?: boolean
   scanMode: 'WEBSITE' | 'GITHUB_REPO'
+  vulnHigh?: number
+  vulnMedium?: number
+  vulnLow?: number
+  maxCvssScore?: number | null
   createdAt: string
-  finishedAt?: string | null
+  completedAt?: string | null
 }
 
 interface BeVuln {
-  id: string
-  jobId: string
+  vulnId: string
   vulnType: string
   url?: string
   parameter?: string
-  riskLevel?: 'HIGH' | 'MEDIUM' | 'LOW' | 'INFORMATIONAL'
+  severity?: 'HIGH' | 'MEDIUM' | 'LOW' | 'INFORMATIONAL'
   cvssScore?: number | null
   cvssVector?: string | null
-  summary?: string
-  description?: string
+  cause?: string        // 기존 aiAnalysis/description 통합
   solution?: string
-  aiAnalysis?: string
-  aiModel?: string | null
 }
 
 /** 백엔드가 만든 UUID인지(실 스캔) vs 목 id("s-1041")인지. */
@@ -143,23 +143,28 @@ function mapVuln(v: BeVuln): Vulnerability {
   const cvss = v.cvssScore ?? 0
   const meta = enrichZap(v.vulnType || '') // 흔한 ZAP 경보 → 한국어 메타
   return {
-    id: v.id,
+    id: v.vulnId,
     name: meta?.name ?? v.vulnType ?? '취약점',
     cwe: meta?.cwe ?? '',
-    severity: mapSeverity(v.riskLevel, cvss),
+    severity: mapSeverity(v.severity, cvss),
     cvss,
     cvssVector: v.cvssVector ?? '',
     location: [v.url, v.parameter].filter(Boolean).join(' → '),
     evidence: '',
-    // "쉽게 말하면": 사전 한 줄 → 백엔드 AI설명 순
-    plain: meta?.plain ?? v.aiAnalysis ?? '',
-    summary: meta?.summary ?? v.summary ?? '',
-    attack: meta?.attack ?? v.description ?? '',
+    // "쉽게 말하면": 사전 한 줄 → 백엔드 분석(cause) 순
+    plain: meta?.plain ?? '',
+    summary: meta?.summary ?? '',
+    attack: meta?.attack ?? v.cause ?? '',
     fix: meta?.fix ?? v.solution ?? '',
-    aiModel: v.aiModel ? `ZAP + AI(${v.aiModel})` : 'ZAP',
+    aiModel: meta ? 'ZAP + AI' : 'ScanOps AI',
     confidence: 1,
     graphVerdict: 'LLM_ONLY',
   }
+}
+
+/** Scan 요약의 심각도별 카운트(목록 뷰용 — 취약점 미조회 시 백엔드 집계 사용). */
+function countsFromJob(j: BeScanJob): SeverityCounts {
+  return { CRITICAL: 0, HIGH: j.vulnHigh ?? 0, MEDIUM: j.vulnMedium ?? 0, LOW: j.vulnLow ?? 0, INFO: 0 }
 }
 
 function countsOf(vs: Vulnerability[]): SeverityCounts {
@@ -169,19 +174,20 @@ function countsOf(vs: Vulnerability[]): SeverityCounts {
 }
 
 export function mapJobToSummary(j: BeScanJob, vulns?: Vulnerability[]): ScanSummary {
-  const counts = vulns ? countsOf(vulns) : { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 }
-  const maxCvss = vulns ? vulns.reduce((m, v) => Math.max(m, v.cvss), 0) : 0
-  const dur = j.finishedAt ? Math.max(1, Math.round((+new Date(j.finishedAt) - +new Date(j.createdAt)) / 1000)) : undefined
+  const counts = vulns ? countsOf(vulns) : countsFromJob(j)
+  const maxCvss = vulns ? vulns.reduce((m, v) => Math.max(m, v.cvss), 0) : (j.maxCvssScore ?? 0)
+  const dur = j.completedAt ? Math.max(1, Math.round((+new Date(j.completedAt) - +new Date(j.createdAt)) / 1000)) : undefined
   return {
-    id: j.id,
-    target: j.targetUrl,
+    id: j.scanId,
+    target: j.target,
     mode: j.scanMode,
-    status: j.status,
+    // UI 모델은 'DONE'을 사용 → 백엔드 'COMPLETED' 매핑
+    status: j.status === 'COMPLETED' ? 'DONE' : j.status,
     maxCvss,
     counts,
-    total: vulns ? vulns.length : 0,
+    total: vulns ? vulns.length : ((j.vulnHigh ?? 0) + (j.vulnMedium ?? 0) + (j.vulnLow ?? 0)),
     createdAt: j.createdAt,
-    finishedAt: j.finishedAt ?? undefined,
+    finishedAt: j.completedAt ?? undefined,
     durationSec: dur,
   }
 }
