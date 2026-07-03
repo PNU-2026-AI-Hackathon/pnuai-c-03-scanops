@@ -23,6 +23,8 @@ services:
       JDBC_DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-scanops}
       PGUSER: ${POSTGRES_USER:-scanops}
       PGPASSWORD: ${POSTGRES_PASSWORD}
+      # 신규 엔티티(scans 등) 테이블 자동 생성 — validate로 뜨는 환경 오버라이드 방지
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
       SCANOPS_MODEL_URL: http://model-server:8100
       SCANOPS_API_KEY: ${SCANOPS_API_KEY}
       # ZAP 분리 운영: c5.large의 사설 IP (올인원이면 http://zap:8090)
