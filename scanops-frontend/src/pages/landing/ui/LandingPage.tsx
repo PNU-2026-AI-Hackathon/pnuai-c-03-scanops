@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Logo from '../../../shared/ui/Logo'
 import Icon, { type IconName } from '../../../shared/ui/Icon'
@@ -13,17 +14,17 @@ const NAV_LINKS = [
 ]
 
 const stats = [
-  { value: '89.1%', label: 'OWASP 표준 취약점 탐지율' },
-  { value: '12.7%', label: '오탐률 (Grok의 절반 이하)' },
+  { value: '62.1', label: 'F1 · 4개 벤치 평균 (Grok 56.2)' },
+  { value: '66.5%', label: '평균 취약점 재현율 (Grok 57.9%)' },
   { value: '1~2분', label: '평균 분석 소요 시간' },
   { value: '0건', label: '외부로 나가는 소스코드' },
 ]
 
-// OWASP Benchmark 110케이스 · 재현 가능(temperature=0)
+// 4개 외부 표준 벤치마크(CVEfixes·OWASP·CyberNative·DiverseVul) 평균 · 재현 가능(temperature=0)
 const compare = [
-  { label: '취약점 탐지율', scanops: 89.1, grok: 60.0 },
-  { label: 'F1 점수', scanops: 88.3, grok: 62.9 },
-  { label: '종합 정확도', scanops: 88.2, grok: 64.5 },
+  { label: 'F1 점수', scanops: 62.1, grok: 56.2 },
+  { label: '취약점 재현율', scanops: 66.5, grok: 57.9 },
+  { label: '종합 정확도', scanops: 65.1, grok: 58.8 },
 ]
 
 const whyCards: { icon: IconName; title: string; desc: string }[] = [
@@ -40,7 +41,7 @@ const whyCards: { icon: IconName; title: string; desc: string }[] = [
   {
     icon: 'shield',
     title: '오탐을 그래프로 걸러냄',
-    desc: 'AI가 의심한 취약점을 정적분석(taint graph)이 한 번 더 검증합니다. 안전한 코드를 위험하다고 잘못 경고하는 오탐을 절반 이하로 줄였습니다.',
+    desc: 'AI가 의심한 취약점을 정적분석(taint graph)이 한 번 더 검증합니다. 안전한 코드를 위험하다고 잘못 경고하는 오탐률을 상용 Grok-3보다 낮게 억제합니다.',
   },
 ]
 
@@ -60,23 +61,56 @@ const plans = [
 
 export default function LandingPage() {
   const navigate = useNavigate()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-white text-ink">
       {/* Nav */}
-      <nav className="sticky top-0 z-30 flex items-center justify-between px-6 sm:px-10 h-16 bg-white/80 backdrop-blur-md border-b border-line">
-        <div className="flex items-center gap-9">
-          <Logo onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
-          <div className="hidden md:flex items-center gap-7">
+      <nav className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-line">
+        <div className="flex items-center justify-between px-6 sm:px-10 h-16">
+          <div className="flex items-center gap-9">
+            <Logo onClick={() => { setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />
+            <div className="hidden md:flex items-center gap-7">
+              {NAV_LINKS.map((l) => (
+                <a key={l.href} href={l.href} className="text-[15px] font-medium text-ink-sub hover:text-ink transition-colors">{l.label}</a>
+              ))}
+            </div>
+          </div>
+          {/* Hamburger — mobile only */}
+          <button
+            type="button"
+            aria-label={menuOpen ? '메뉴 닫기' : '메뉴 열기'}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((v) => !v)}
+            className="md:hidden inline-flex items-center justify-center w-10 h-10 -mr-2 rounded-lg text-ink-sub hover:bg-surface transition-colors"
+          >
+            {menuOpen ? (
+              <Icon name="x" size={22} />
+            ) : (
+              <span className="flex flex-col gap-[5px]">
+                <span className="block w-5 h-[2px] rounded-full bg-current" />
+                <span className="block w-5 h-[2px] rounded-full bg-current" />
+                <span className="block w-5 h-[2px] rounded-full bg-current" />
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Mobile dropdown */}
+        {menuOpen && (
+          <div className="md:hidden border-t border-line bg-white px-6 py-1">
             {NAV_LINKS.map((l) => (
-              <a key={l.href} href={l.href} className="text-sm font-medium text-ink-sub hover:text-ink transition-colors">{l.label}</a>
+              <a
+                key={l.href}
+                href={l.href}
+                onClick={() => setMenuOpen(false)}
+                className="block py-3.5 text-[16px] font-medium text-ink-sub hover:text-ink transition-colors border-b border-line last:border-0"
+              >
+                {l.label}
+              </a>
             ))}
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/login')} className="hidden sm:inline-flex">로그인</Button>
-          <Button size="sm" onClick={() => navigate('/signup')}>무료로 시작</Button>
-        </div>
+        )}
       </nav>
 
       {/* Hero */}
@@ -92,17 +126,17 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-6 pt-20 relative z-10 sm:pt-24 pb-12 text-center flex flex-col items-center">
           <div className="mb-6 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-soft border border-line text-[12.5px] font-semibold text-ink-sub shadow-[0px_1px_3px_rgba(0,0,0,0.05)]">
             <span className="text-brand"><Icon name="shield" size={14} /></span>
-            OWASP 표준 벤치마크에서 상용 Grok-3 초월
+            4개 외부 표준 벤치마크 평균 상용 Grok-3 초월
           </div>
           <h1 className="text-[40px] sm:text-[60px] font-extrabold tracking-tight leading-[1.08]">
             당신의 코드는,
             <br />
             <span className="text-brand">안전한가요?</span>
           </h1>
-          <p className="mt-6 max-w-xl text-[16px] text-ink-sub leading-relaxed [text-wrap:balance]">
+          <p className="mt-6 max-w-2xl text-[18px] sm:text-[20px] text-ink-sub leading-relaxed break-keep [text-wrap:balance]">
             ChatGPT·Grok 같은 범용 AI가 놓치는 취약점까지, 보안만 집중 학습한 ScanOps가 찾아냅니다.
           </p>
-          <p className="mt-2 max-w-xl text-[16px] text-ink-sub leading-relaxed [text-wrap:balance]">
+          <p className="mt-2 max-w-2xl text-[18px] sm:text-[20px] text-ink-sub leading-relaxed break-keep [text-wrap:balance]">
             URL이나 GitHub 레포만 넣으면 위험도와 고치는 방법까지, 한국어 리포트로 알려드려요.
           </p>
           <div className="mt-9 flex flex-col sm:flex-row gap-3">
@@ -122,8 +156,8 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
           {stats.map((s) => (
             <div key={s.label}>
-              <p className="text-3xl sm:text-[40px] font-extrabold tracking-tight tnum">{s.value}</p>
-              <p className="mt-2 text-[13px] text-ink-muted">{s.label}</p>
+              <p className="text-[34px] sm:text-[44px] font-extrabold tracking-tight tnum">{s.value}</p>
+              <p className="mt-2 text-[14.5px] text-ink-muted break-keep">{s.label}</p>
             </div>
           ))}
         </div>
@@ -135,12 +169,12 @@ export default function LandingPage() {
           <SectionHeading tag="성능" title="범용 AI보다 더 잡고, 덜 틀립니다" sub="같은 코드를 넣어도 결과가 다릅니다. 보안에만 특화 학습된 ScanOps는 더 많이 찾고, 덜 틀립니다. 우리가 만들지 않은 외부 표준 평가셋으로 검증했어요." />
           <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-5">
             <div className="rounded-2xl bg-white border border-line p-7">
-              <p className="text-sm font-bold text-ink mb-1">OWASP Benchmark 110케이스</p>
-              <p className="text-xs text-ink-muted mb-6">외부 표준 SAST 평가셋 · 높을수록 좋음</p>
+              <p className="text-[15px] font-bold text-ink mb-1">4개 외부 표준 벤치마크 평균</p>
+              <p className="text-xs text-ink-muted mb-6">CVEfixes·OWASP·CyberNative·DiverseVul · 높을수록 좋음</p>
               {compare.map((c) => <CompareBar key={c.label} {...c} />)}
               <div className="mt-6 flex items-center gap-5 text-xs">
                 <Legend color="var(--color-brand)" label="ScanOps" />
-                <Legend color="var(--color-line-strong)" label="Grok-3-mini (상용)" />
+                <Legend color="var(--color-line-strong)" label="Grok-3 (상용)" />
               </div>
             </div>
             <div className="rounded-2xl bg-ink p-7 flex flex-col self-start">
@@ -151,14 +185,14 @@ export default function LandingPage() {
               <div className="mt-6 grid grid-cols-2 gap-4">
                 <div className="rounded-xl bg-white/5 border border-white/10 p-5">
                   <p className="text-[11px] text-ink-faint font-medium">ScanOps 오탐률</p>
-                  <p className="text-[34px] font-extrabold text-white mt-1 tnum leading-none">12.7<span className="text-lg">%</span></p>
+                  <p className="text-[34px] font-extrabold text-white mt-1 tnum leading-none">36.3<span className="text-lg">%</span></p>
                 </div>
                 <div className="rounded-xl bg-white/5 border border-white/10 p-5">
                   <p className="text-[11px] text-ink-faint font-medium">Grok-3 오탐률</p>
-                  <p className="text-[34px] font-extrabold text-ink-faint mt-1 tnum leading-none">30.9<span className="text-lg">%</span></p>
+                  <p className="text-[34px] font-extrabold text-ink-faint mt-1 tnum leading-none">40.1<span className="text-lg">%</span></p>
                 </div>
               </div>
-              <p className="mt-6 text-[12px] text-ink-faint leading-relaxed">* OWASP Benchmark v1.2 외부 표준 평가셋 · 재현 가능(temperature=0).</p>
+              <p className="mt-6 text-[12px] text-ink-faint leading-relaxed">* CVEfixes·OWASP·CyberNative·DiverseVul 4개 외부 표준 벤치마크 평균 · 재현 가능(temperature=0).</p>
             </div>
           </div>
         </div>
@@ -172,8 +206,8 @@ export default function LandingPage() {
             {whyCards.map((c) => (
               <div key={c.title} className="rounded-2xl bg-white border border-line p-7">
                 <div className="w-12 h-12 rounded-xl bg-brand-soft text-brand flex items-center justify-center mb-5"><Icon name={c.icon} size={22} /></div>
-                <h3 className="font-bold text-[16px] mb-2">{c.title}</h3>
-                <p className="text-[13.5px] text-ink-muted leading-relaxed">{c.desc}</p>
+                <h3 className="font-bold text-[18px] mb-2">{c.title}</h3>
+                <p className="text-[15px] text-ink-muted leading-relaxed break-keep">{c.desc}</p>
               </div>
             ))}
           </div>
@@ -216,8 +250,8 @@ export default function LandingPage() {
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: m.soft, color: m.accent }}><Icon name={m.icon} size={21} /></div>
                   <span className="px-2.5 py-1 rounded-full text-[11px] font-bold" style={{ background: m.soft, color: m.accent }}>{m.tag}</span>
                 </div>
-                <h3 className="font-bold text-base mb-1.5">{m.title}</h3>
-                <p className="text-[13px] text-ink-muted leading-relaxed">{m.desc}</p>
+                <h3 className="font-bold text-[17px] mb-1.5">{m.title}</h3>
+                <p className="text-[14.5px] text-ink-muted leading-relaxed break-keep">{m.desc}</p>
               </div>
             ))}
           </div>
@@ -267,8 +301,8 @@ export default function LandingPage() {
           <div className="mb-5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-soft text-purple text-xs font-bold">
             <Icon name="github" size={14} /> GitHub App
           </div>
-          <h2 className="text-3xl font-bold mb-5">PR 올리면 <span className="text-purple">자동으로 분석</span>됩니다</h2>
-          <p className="text-ink-sub text-base leading-relaxed mb-9">
+          <h2 className="text-[32px] sm:text-[40px] font-bold mb-5 leading-[1.15] break-keep">PR 올리면 <span className="text-purple">자동으로 분석</span>됩니다</h2>
+          <p className="text-ink-sub text-[17px] sm:text-[18px] leading-relaxed mb-9 break-keep">
             ScanOps GitHub App을 레포에 설치하면 PR마다 변경된 코드가 자동으로 검사돼요. 발견된 취약점은 해당 코드 줄에 바로 댓글로, 뭐가 문제인지·어떻게 고치면 되는지 한국어로 알려줍니다.
           </p>
           <Button size="lg" variant="dark" leftIcon="github" onClick={() => navigate('/signup')}>GitHub App 시작하기</Button>
@@ -280,8 +314,8 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto rounded-3xl bg-ink px-8 py-16 text-center relative overflow-hidden">
           <div className="pointer-events-none absolute inset-0 -z-0" style={{ background: 'radial-gradient(50% 120% at 50% 0%, rgba(49,130,246,0.25) 0%, rgba(0,0,0,0) 60%)' }} />
           <div className="relative">
-            <h2 className="text-[32px] font-bold text-white">당신의 코드, 지금 무료로 점검하세요</h2>
-            <p className="mt-3 text-ink-faint">회원가입하면 웹사이트 보안검사 1회를 무료로 체험할 수 있어요. 카드 등록도 필요 없어요.</p>
+            <h2 className="text-[32px] sm:text-[42px] font-bold text-white leading-[1.15] break-keep">당신의 코드, 지금 무료로 점검하세요</h2>
+            <p className="mt-4 text-[17px] sm:text-[18px] text-ink-faint break-keep">회원가입하면 웹사이트 보안검사 1회를 무료로 체험할 수 있어요. 카드 등록도 필요 없어요.</p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
               <Button size="lg" onClick={() => navigate('/signup')} rightIcon="arrow-right">무료로 시작하기</Button>
               <Button size="lg" variant="weak" onClick={() => navigate('/login')} className="!bg-white/10 !text-white hover:!bg-white/20">로그인</Button>
@@ -300,9 +334,9 @@ export default function LandingPage() {
 function SectionHeading({ tag, title, sub }: { tag: string; title: string; sub: string }) {
   return (
     <div className="text-center flex flex-col items-center">
-      <span className="px-3 py-1.5 rounded-full bg-brand-soft text-brand text-xs font-bold mb-3">{tag}</span>
-      <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
-      <p className="mt-3 max-w-2xl text-ink-sub text-[15px] leading-relaxed">{sub}</p>
+      <span className="px-3 py-1.5 rounded-full bg-brand-soft text-brand text-[13px] font-bold mb-4">{tag}</span>
+      <h2 className="text-[32px] sm:text-[44px] font-bold tracking-tight leading-[1.15] break-keep">{title}</h2>
+      <p className="mt-4 max-w-2xl text-ink-sub text-[17px] sm:text-[19px] leading-relaxed break-keep">{sub}</p>
     </div>
   )
 }
@@ -344,7 +378,7 @@ function FlowCard({ badge, color, soft, title, steps, note }: { badge: string; c
         {steps.map((s, i) => (
           <div key={s} className="flex items-center gap-3">
             <span className="w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0" style={{ background: soft, color }}>{i + 1}</span>
-            <span className="text-[13.5px] text-ink-sub">{s}</span>
+            <span className="text-[14.5px] text-ink-sub">{s}</span>
           </div>
         ))}
       </div>
@@ -395,7 +429,7 @@ function ReportPreview() {
 
         <div className="mt-3 flex items-center gap-2 rounded-lg bg-brand-soft px-3 py-2.5">
           <span className="text-brand"><Icon name="shield" size={15} /></span>
-          <span className="text-[12.5px] text-brand font-medium">OWASP 표준 벤치마크에서 검증된 정확도 · 정적분석 그래프로 오탐 억제</span>
+          <span className="text-[12.5px] text-brand font-medium">외부 표준 벤치마크에서 검증된 정확도 · 정적분석 그래프로 오탐 억제</span>
         </div>
 
         <div className="mt-3 flex flex-col gap-2">
