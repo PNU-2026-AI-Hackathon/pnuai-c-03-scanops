@@ -79,6 +79,10 @@ export default function IntegrationsPage() {
                 <Badge tone="brand" size="sm">PR 자동 분석</Badge>
               </div>
               <p className="text-[13px] text-ink-muted mt-0.5">설치하면 PR을 올릴 때마다 변경된 코드를 자동으로 검사하고 댓글로 결과를 남겨요.</p>
+              <p className="text-[12px] text-ink-muted mt-1.5 leading-relaxed">
+                <span className="font-semibold text-ink-sub">프라이빗 레포 검사(SAST)도 이 App이 필요해요.</span> 설치 화면에서
+                <b className="mx-1">“Only select repositories”</b>를 고르고 검사할 프라이빗 레포를 선택하면 됩니다.
+              </p>
             </div>
             <Button variant="outline" size="sm" rightIcon="external-link" onClick={() => window.open(GITHUB_APP_INSTALL_URL, '_blank', 'noopener')}>App 설치</Button>
           </div>

@@ -34,6 +34,7 @@ export default function StatusPage() {
 
   const [progress, setProgress] = useState(real ? 8 : 6)
   const [failed, setFailed] = useState(false)
+  const [failReason, setFailReason] = useState<string | null>(null)
 
   useEffect(() => {
     if (real) {
@@ -48,7 +49,7 @@ export default function StatusPage() {
             setTimeout(() => navigate(`/report/${id}`, { replace: true }), 500)
             return
           }
-          if (job.status === 'FAILED') { setFailed(true); return }
+          if (job.status === 'FAILED') { setFailReason(job.failureReason ?? null); setFailed(true); return }
           setProgress((p) => Math.min(90, p + (job.status === 'RUNNING' ? 7 : 2)))
         } catch { /* 일시 오류 — 계속 폴링 */ }
         if (!stopped) timer = setTimeout(poll, 2500)
@@ -81,8 +82,20 @@ export default function StatusPage() {
           <div className="w-full max-w-[440px] text-center fade-up">
             <span className="inline-flex w-14 h-14 rounded-2xl bg-danger-soft text-danger items-center justify-center mb-4"><Icon name="alert-triangle" size={26} /></span>
             <h2 className="text-[20px] font-bold text-ink">스캔에 실패했어요</h2>
-            <p className="mt-1.5 text-[13.5px] text-ink-muted">대상에 접근할 수 없거나 스캐너 오류일 수 있어요. 잠시 후 다시 시도해 주세요.</p>
+            <p className="mt-1.5 text-[13.5px] text-ink-muted">{failReason || '대상에 접근할 수 없거나 스캐너 오류일 수 있어요. 잠시 후 다시 시도해 주세요.'}</p>
+            {failReason?.includes('App') && (
+              <div className="mt-4 rounded-xl bg-warning-soft px-4 py-3 text-left">
+                <p className="text-[12.5px] text-[#9a5b00] leading-relaxed">
+                  프라이빗 레포를 검사하려면 <b>ScanOps App</b>을 그 레포에 설치해야 해요.
+                  설치 화면에서 <b>“Only select repositories”</b>를 고르고 검사할 레포를 선택하세요.
+                  (“All repositories”는 공개 레포까지 포함하지만, 프라이빗은 명시적으로 골라도 됩니다.)
+                </p>
+              </div>
+            )}
             <div className="mt-5 flex gap-2 justify-center">
+              {failReason?.includes('App') && (
+                <Button variant="dark" leftIcon="github" onClick={() => navigate('/integrations')}>App 설치하러 가기</Button>
+              )}
               <Button variant="outline" onClick={() => navigate('/reports')}>스캔 기록</Button>
               <Button onClick={() => navigate('/scan')}>다시 스캔</Button>
             </div>

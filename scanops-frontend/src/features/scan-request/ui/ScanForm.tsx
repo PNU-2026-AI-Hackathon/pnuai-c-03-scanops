@@ -211,6 +211,17 @@ export default function ScanForm() {
               )}
             </div>
 
+            {isRepo && (
+              <div className="mt-3 rounded-xl bg-field border border-line px-4 py-3 flex items-start gap-2">
+                <span className="text-ink-faint mt-0.5"><Icon name="lock" size={15} /></span>
+                <p className="text-[12.5px] text-ink-sub leading-relaxed">
+                  <span className="font-semibold text-ink">프라이빗 레포도 검사할 수 있어요.</span> ScanOps App을 그 레포에 설치하면 돼요 —
+                  <button type="button" onClick={() => navigate('/integrations')} className="text-brand font-semibold hover:underline mx-1">App 설치</button>
+                  화면에서 <b>“Only select repositories”</b>를 골라 검사할 프라이빗 레포를 선택하세요.
+                </p>
+              </div>
+            )}
+
             {error && (
               <div className="mt-4 flex items-center gap-2 rounded-xl bg-danger-soft px-4 py-3 text-danger text-sm">
                 <Icon name="alert-triangle" size={16} /> {error}

@@ -22,6 +22,7 @@ interface BeScanJob {
   maxCvssScore?: number | null
   createdAt: string
   completedAt?: string | null
+  failureReason?: string | null
 }
 
 interface BeVuln {
