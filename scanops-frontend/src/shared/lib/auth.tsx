@@ -5,7 +5,8 @@ import type { PlanId, User } from './mock'
  * Authentication/session.
  * - GitHub OAuth is REAL: the button redirects to the backend, which exchanges
  *   the code and redirects back with a JWT; `loginWithToken` calls /api/auth/me.
- * - Email/password remain mocked (no backend endpoint yet).
+ * - Email/password is REAL too: signup/login POST to the backend, which issues
+ *   the same JWT format, so DAST/scan APIs authorize identically to GitHub.
  * Token is stored in localStorage and attached as Bearer by the http client.
  */
 
@@ -15,6 +16,18 @@ const TOKEN_KEY = 'scanops.token'
 export const getToken = () => localStorage.getItem(TOKEN_KEY)
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+
+/** POST email credentials, return the issued JWT (or throw the backend's message). */
+async function emailAuth(path: string, body: { email: string; password: string }): Promise<string> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data?.error ?? '요청에 실패했어요.')
+  return data.token as string
+}
 
 interface AuthState {
   user: User | null
@@ -69,13 +82,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     githubLogin: githubLogin ?? null,
   })
 
-  const login = async (email: string) => {
-    await delay()
-    set(makeUser(email, 'PRO'))
+  // REAL: email login/signup issue the same JWT as GitHub, so DAST/scan APIs
+  // authorize the session. On failure we surface the backend's error message.
+  const login = async (email: string, password: string) => {
+    const token = await emailAuth('/api/auth/login', { email, password })
+    await loginWithToken(token)
   }
-  const signup = async (email: string) => {
-    await delay()
-    set(makeUser(email, 'FREE'))
+  const signup = async (email: string, password: string) => {
+    const token = await emailAuth('/api/auth/signup', { email, password })
+    await loginWithToken(token)
   }
   const completeGitHub = async (login: string) => {
     await delay(900)
@@ -94,11 +109,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const me = await res.json()
     set({
       id: String(me.id),
-      name: me.name || me.githubLogin,
+      name: me.name || me.githubLogin || me.email?.split('@')[0],
       email: me.email || `${me.githubLogin}@users.noreply.github.com`,
       plan: (me.plan as PlanId) ?? 'FREE',
       avatarUrl: me.avatarUrl || null,
-      githubLogin: me.githubLogin ?? null,
+      githubLogin: me.githubLogin || null,
     })
   }
   const logout = () => {

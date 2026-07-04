@@ -42,8 +42,8 @@ export default function SignupPage() {
     try {
       await signup(email, pw)
       navigate('/onboarding', { replace: true })
-    } catch {
-      setError('가입에 실패했어요. 잠시 후 다시 시도해 주세요.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '가입에 실패했어요. 잠시 후 다시 시도해 주세요.')
     } finally {
       setLoading(false)
     }
