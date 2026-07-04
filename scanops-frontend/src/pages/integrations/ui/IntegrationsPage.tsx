@@ -5,11 +5,11 @@ import Card from '../../../shared/ui/Card'
 import Button from '../../../shared/ui/Button'
 import Badge from '../../../shared/ui/Badge'
 import Icon from '../../../shared/ui/Icon'
-import { useAuth } from '../../../shared/lib/auth'
+import { useAuth, getToken } from '../../../shared/lib/auth'
 import { useToast } from '../../../shared/ui/Toast'
 import { relativeTime } from '../../../shared/lib/mock'
 import { fetchMyGithubRepos, type MyGithubRepo } from '../../../shared/api/scan'
-import { GITHUB_APP_INSTALL_URL } from '../../../shared/lib/config'
+import { GITHUB_APP_INSTALL_URL, githubLinkUrl } from '../../../shared/lib/config'
 
 export default function IntegrationsPage() {
   const navigate = useNavigate()
@@ -19,6 +19,13 @@ export default function IntegrationsPage() {
   const [error, setError] = useState('')
   const [q, setQ] = useState('')
   const connected = !!user?.githubLogin
+
+  // 실제 GitHub OAuth 연동 — 현재(이메일) 계정에 GitHub을 붙인다(같은 계정).
+  const connectGithub = () => {
+    const token = getToken()
+    if (!token) { toast('먼저 로그인해 주세요'); return }
+    window.location.href = githubLinkUrl(token)
+  }
 
   useEffect(() => {
     if (!connected) { setRepos(null); return }
@@ -57,7 +64,7 @@ export default function IntegrationsPage() {
                 <Button variant="ghost" size="sm" onClick={() => { update({ githubLogin: null }); toast('연결을 해제했어요') }}>해제</Button>
               </div>
             ) : (
-              <Button variant="dark" size="sm" leftIcon="github" onClick={() => { update({ githubLogin: 'octocat' }); toast('GitHub 연결됨', 'success') }}>연결하기</Button>
+              <Button variant="dark" size="sm" leftIcon="github" onClick={connectGithub}>연결하기</Button>
             )}
           </div>
         </Card>

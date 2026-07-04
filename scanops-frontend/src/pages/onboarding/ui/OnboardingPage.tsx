@@ -4,15 +4,23 @@ import Logo from '../../../shared/ui/Logo'
 import Icon, { type IconName } from '../../../shared/ui/Icon'
 import Button from '../../../shared/ui/Button'
 import Card from '../../../shared/ui/Card'
-import { useAuth } from '../../../shared/lib/auth'
+import { useAuth, getToken } from '../../../shared/lib/auth'
 import { useToast } from '../../../shared/ui/Toast'
+import { githubLinkUrl } from '../../../shared/lib/config'
 
 export default function OnboardingPage() {
   const navigate = useNavigate()
-  const { user, update } = useAuth()
+  const { user } = useAuth()
   const { toast } = useToast()
   const [step, setStep] = useState(0)
   const connected = !!user?.githubLogin
+
+  // 실제 GitHub OAuth 연동 — 현재(이메일) 계정에 GitHub을 붙인다(같은 계정).
+  const connectGithub = () => {
+    const token = getToken()
+    if (!token) { toast('먼저 로그인해 주세요'); return }
+    window.location.href = githubLinkUrl(token)
+  }
 
   const steps = ['GitHub 연결', '시작 방법 선택']
 
@@ -59,7 +67,7 @@ export default function OnboardingPage() {
                 {connected ? (
                   <span className="text-success"><Icon name="check-circle" size={22} /></span>
                 ) : (
-                  <Button size="sm" variant="dark" leftIcon="github" onClick={() => { update({ githubLogin: 'octocat' }); toast('GitHub 연결됨', 'success') }}>
+                  <Button size="sm" variant="dark" leftIcon="github" onClick={connectGithub}>
                     연결
                   </Button>
                 )}

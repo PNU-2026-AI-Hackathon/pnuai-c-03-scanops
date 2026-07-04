@@ -5,14 +5,13 @@ import Icon from '../../../shared/ui/Icon'
 import { useAuth } from '../../../shared/lib/auth'
 
 /**
- * Mock GitHub OAuth callback. In production GitHub redirects here with `?code=`,
- * which the backend exchanges for a token. Here we simulate that handshake.
- * Manual setup needed for real OAuth — see README "직접 해야 할 일".
+ * GitHub OAuth 콜백. 백엔드가 로그인/연동 성공 시 `?token=<jwt>`를 붙여 이 경로로
+ * 리다이렉트한다. 여기서 토큰을 저장하고 프로필을 불러온 뒤 대시보드로 이동한다.
  */
 export default function GitHubCallbackPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { loginWithToken, completeGitHub } = useAuth()
+  const { loginWithToken } = useAuth()
   const [phase, setPhase] = useState<'connecting' | 'done' | 'error'>('connecting')
   const ran = useRef(false)
 
@@ -20,15 +19,14 @@ export default function GitHubCallbackPage() {
     if (ran.current) return
     ran.current = true
     const token = new URLSearchParams(location.search).get('token')
-    // 실제 OAuth: 백엔드가 토큰을 붙여 리다이렉트. 토큰 없으면 로컬 데모용 목 폴백.
-    const flow = token ? loginWithToken(token) : completeGitHub('octocat').then(() => {})
-    flow
+    if (!token) { setPhase('error'); return }
+    loginWithToken(token)
       .then(() => {
         setPhase('done')
         setTimeout(() => navigate('/dashboard', { replace: true }), 650)
       })
       .catch(() => setPhase('error'))
-  }, [loginWithToken, completeGitHub, navigate, location.search])
+  }, [loginWithToken, navigate, location.search])
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
