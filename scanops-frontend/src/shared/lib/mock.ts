@@ -121,7 +121,7 @@ const VULNS: Vulnerability[] = [
     attack: "username에 ' OR '1'='1' -- 를 넣으면 비밀번호 검증 없이 첫 사용자로 로그인됩니다.",
     fix: 'PreparedStatement로 파라미터를 바인딩하세요. 입력값을 쿼리 문자열에 직접 연결하지 마세요.',
     fixCode: `String sql = "SELECT * FROM users WHERE name = ?";\nps.setString(1, username);`,
-    aiModel: 'qwen2.5-coder-security-v11', confidence: 0.98, graphVerdict: 'CONFIRMED',
+    aiModel: 'ScanOps 보안 AI', confidence: 0.98, graphVerdict: 'CONFIRMED',
   },
   {
     id: 'v2', name: 'Reflected XSS', cwe: 'CWE-79', severity: 'HIGH', cvss: 7.4,
@@ -133,7 +133,7 @@ const VULNS: Vulnerability[] = [
     attack: 'q=<script>fetch(`/steal?c=${document.cookie}`)</script> 링크로 세션 탈취가 가능합니다.',
     fix: '출력 시 HTML 인코딩(ESAPI.encodeForHTML 등)을 적용하세요.',
     fixCode: `out.write("결과: " + ESAPI.encoder().encodeForHTML(q));`,
-    aiModel: 'qwen2.5-coder-security-v11', confidence: 0.91, graphVerdict: 'CONFIRMED',
+    aiModel: 'ScanOps 보안 AI', confidence: 0.91, graphVerdict: 'CONFIRMED',
   },
   {
     id: 'v3', name: 'Weak Cryptographic Algorithm', cwe: 'CWE-327', severity: 'MEDIUM', cvss: 5.9,
@@ -168,7 +168,7 @@ const VULNS: Vulnerability[] = [
     summary: '파일 경로에 사용자 입력이 검증 없이 들어가, 임의 파일 읽기가 가능합니다.',
     attack: 'file=../../../../etc/passwd 로 서버 내부 파일을 내려받을 수 있습니다.',
     fix: 'getCanonicalPath()로 정규화 후 허용 디렉터리 내부인지 검사하세요.',
-    aiModel: 'qwen2.5-coder-security-v11', confidence: 0.88, graphVerdict: 'LLM_ONLY',
+    aiModel: 'ScanOps 보안 AI', confidence: 0.88, graphVerdict: 'LLM_ONLY',
   },
   {
     id: 'v6', name: 'Hardcoded Credentials', cwe: 'CWE-798', severity: 'MEDIUM', cvss: 6.5,
@@ -179,7 +179,7 @@ const VULNS: Vulnerability[] = [
     summary: '소스코드에 자격증명이 하드코딩되어, 저장소 접근자가 그대로 탈취할 수 있습니다.',
     attack: '레포 유출 시 운영 계정이 즉시 노출됩니다.',
     fix: '비밀값을 환경변수·시크릿 매니저로 분리하세요.',
-    aiModel: 'qwen2.5-coder-security-v11 + NVD RAG', confidence: 0.95, graphVerdict: 'LLM_ONLY',
+    aiModel: 'ScanOps 보안 AI + NVD RAG', confidence: 0.95, graphVerdict: 'LLM_ONLY',
   },
 ]
 

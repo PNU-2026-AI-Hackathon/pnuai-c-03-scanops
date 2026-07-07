@@ -14,6 +14,11 @@ import { isRealId, fetchRealReport } from '../../../shared/api/scan'
 
 const SEV_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
 
+// SAST 엔진 표시 라벨(리포트 헤더). 프로덕션 /health 확인 결과 실제 배포 = V17
+// (api_v17: v13 ∨ v16.1 앙상블 + taint graph, LLM은 RunPod). 버전이 응답에 실려오지 않아
+// 여기 표기만 하므로, 차기 버전(V18 등) 배포 시 이 한 줄만 갱신. 과거 'v11'은 오표기였다.
+const SAST_ENGINE_LABEL = 'ScanOps v17 (v13∨v16.1 앙상블) + taint graph'
+
 export default function ReportPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -62,7 +67,7 @@ export default function ReportPage() {
                 <span style={{ color: m.color }}><Icon name={m.icon} size={20} /></span>{report.target}
               </h1>
               <p className="mt-1 text-[13px] text-ink-muted">
-                분석 {report.durationSec ? `${report.durationSec}초` : ''}{report.loc ? ` · ${report.loc.toLocaleString('ko-KR')}줄` : ''} · 엔진 {report.mode === 'WEBSITE' ? 'OWASP ZAP + AI 분석' : 'qwen2.5-coder-security-v11 + taint graph'}
+                분석 {report.durationSec ? `${report.durationSec}초` : ''}{report.loc ? ` · ${report.loc.toLocaleString('ko-KR')}줄` : ''} · 엔진 {report.mode === 'WEBSITE' ? 'OWASP ZAP + AI 분석' : SAST_ENGINE_LABEL}
               </p>
             </div>
             <div className="flex gap-2">
