@@ -14,10 +14,10 @@ import { isRealId, fetchRealReport } from '../../../shared/api/scan'
 
 const SEV_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
 
-// SAST 엔진 표시 라벨(리포트 헤더). 프로덕션 /health 확인 결과 실제 배포 = V17
-// (api_v17: v13 ∨ v16.1 앙상블 + taint graph, LLM은 RunPod). 버전이 응답에 실려오지 않아
-// 여기 표기만 하므로, 차기 버전(V18 등) 배포 시 이 한 줄만 갱신. 과거 'v11'은 오표기였다.
-const SAST_ENGINE_LABEL = 'ScanOps v17 (v13∨v16.1 앙상블) + taint graph'
+// SAST 엔진 표시 라벨(리포트 헤더). 실제 배포 = rebuild (api_rebuild: 2026-07 재구축
+// Qwen3.5-9B 단일 모델, LLM은 RunPod llama.cpp 워커). 버전이 응답에 실려오지 않아
+// 여기 표기만 하므로, 차기 버전 배포 시 이 한 줄만 갱신.
+const SAST_ENGINE_LABEL = 'ScanOps Rebuild (Qwen3.5-9B)'
 
 export default function ReportPage() {
   const { id } = useParams<{ id: string }>()

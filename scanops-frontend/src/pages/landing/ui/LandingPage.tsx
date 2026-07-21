@@ -14,17 +14,18 @@ const NAV_LINKS = [
 ]
 
 const stats = [
-  { value: '62.1', label: 'F1 · 4개 벤치 평균 (Grok 56.2)' },
-  { value: '66.5%', label: '평균 취약점 재현율 (Grok 57.9%)' },
+  { value: '80.5', label: 'F1 · 신규 CVE 벤치마크 (Grok-4 54.1)' },
+  { value: '79.7%', label: '취약점 재현율 (Grok-4 57.2%)' },
   { value: '1~2분', label: '평균 분석 소요 시간' },
   { value: '0건', label: '외부로 나가는 소스코드' },
 ]
 
-// 4개 외부 표준 벤치마크(CVEfixes·OWASP·CyberNative·DiverseVul) 평균 · 재현 가능(temperature=0)
+// 2026-07 rebuild 모델 — CVEfixes 시간분할 test 1,197건(2023-07 이후 신규 CVE),
+// 동일 프롬프트·파서·채점으로 Grok-4와 비교 · 재현 가능(temperature=0)
 const compare = [
-  { label: 'F1 점수', scanops: 62.1, grok: 56.2 },
-  { label: '취약점 재현율', scanops: 66.5, grok: 57.9 },
-  { label: '종합 정확도', scanops: 65.1, grok: 58.8 },
+  { label: 'F1 점수', scanops: 80.5, grok: 54.1 },
+  { label: '취약점 재현율', scanops: 79.7, grok: 57.2 },
+  { label: '종합 정확도', scanops: 82.2, grok: 55.1 },
 ]
 
 const whyCards: { icon: IconName; title: string; desc: string }[] = [
@@ -40,8 +41,8 @@ const whyCards: { icon: IconName; title: string; desc: string }[] = [
   },
   {
     icon: 'shield',
-    title: '오탐을 그래프로 걸러냄',
-    desc: 'AI가 의심한 취약점을 정적분석(taint graph)이 한 번 더 검증합니다. 안전한 코드를 위험하다고 잘못 경고하는 오탐률을 상용 Grok-3보다 낮게 억제합니다.',
+    title: '오탐을 학습으로 걸러냄',
+    desc: '실제 취약 코드와 패치된 안전 코드 쌍으로 집중 학습해, 안전한 코드를 위험하다고 잘못 경고하는 오탐률(15.7%)을 상용 대형 모델(Grok-4 46.7%) 대비 크게 낮췄습니다.',
   },
 ]
 
@@ -126,7 +127,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-6 pt-20 relative z-10 sm:pt-24 pb-12 text-center flex flex-col items-center">
           <div className="mb-6 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-soft border border-line text-[12.5px] font-semibold text-ink-sub shadow-[0px_1px_3px_rgba(0,0,0,0.05)]">
             <span className="text-brand"><Icon name="shield" size={14} /></span>
-            4개 외부 표준 벤치마크 평균 상용 Grok-3 초월
+            신규 CVE 벤치마크에서 상용 Grok-4 초월
           </div>
           <h1 className="text-[40px] sm:text-[60px] font-extrabold tracking-tight leading-[1.08]">
             당신의 코드는,
@@ -169,12 +170,12 @@ export default function LandingPage() {
           <SectionHeading tag="성능" title="범용 AI보다 더 잡고, 덜 틀립니다" sub="같은 코드를 넣어도 결과가 다릅니다. 보안에만 특화 학습된 ScanOps는 더 많이 찾고, 덜 틀립니다. 우리가 만들지 않은 외부 표준 평가셋으로 검증했어요." />
           <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-5">
             <div className="rounded-2xl bg-white border border-line p-7">
-              <p className="text-[15px] font-bold text-ink mb-1">4개 외부 표준 벤치마크 평균</p>
-              <p className="text-xs text-ink-muted mb-6">CVEfixes·OWASP·CyberNative·DiverseVul · 높을수록 좋음</p>
+              <p className="text-[15px] font-bold text-ink mb-1">신규 CVE 벤치마크 (1,197건)</p>
+              <p className="text-xs text-ink-muted mb-6">CVEfixes 시간분할 test · 2023-07 이후 공개 신규 CVE · 높을수록 좋음</p>
               {compare.map((c) => <CompareBar key={c.label} {...c} />)}
               <div className="mt-6 flex items-center gap-5 text-xs">
                 <Legend color="var(--color-brand)" label="ScanOps" />
-                <Legend color="var(--color-line-strong)" label="Grok-3 (상용)" />
+                <Legend color="var(--color-line-strong)" label="Grok-4 (상용)" />
               </div>
             </div>
             <div className="rounded-2xl bg-ink p-7 flex flex-col self-start">
@@ -185,14 +186,14 @@ export default function LandingPage() {
               <div className="mt-6 grid grid-cols-2 gap-4">
                 <div className="rounded-xl bg-white/5 border border-white/10 p-5">
                   <p className="text-[11px] text-ink-faint font-medium">ScanOps 오탐률</p>
-                  <p className="text-[34px] font-extrabold text-white mt-1 tnum leading-none">36.3<span className="text-lg">%</span></p>
+                  <p className="text-[34px] font-extrabold text-white mt-1 tnum leading-none">15.7<span className="text-lg">%</span></p>
                 </div>
                 <div className="rounded-xl bg-white/5 border border-white/10 p-5">
-                  <p className="text-[11px] text-ink-faint font-medium">Grok-3 오탐률</p>
-                  <p className="text-[34px] font-extrabold text-ink-faint mt-1 tnum leading-none">40.1<span className="text-lg">%</span></p>
+                  <p className="text-[11px] text-ink-faint font-medium">Grok-4 오탐률</p>
+                  <p className="text-[34px] font-extrabold text-ink-faint mt-1 tnum leading-none">46.7<span className="text-lg">%</span></p>
                 </div>
               </div>
-              <p className="mt-6 text-[12px] text-ink-faint leading-relaxed">* CVEfixes·OWASP·CyberNative·DiverseVul 4개 외부 표준 벤치마크 평균 · 재현 가능(temperature=0).</p>
+              <p className="mt-6 text-[12px] text-ink-faint leading-relaxed">* CVEfixes 시간분할 test 1,197건(2023-07 이후 신규 CVE) · 동일 프롬프트·채점 · 재현 가능(temperature=0).</p>
             </div>
           </div>
         </div>
@@ -429,7 +430,7 @@ function ReportPreview() {
 
         <div className="mt-3 flex items-center gap-2 rounded-lg bg-brand-soft px-3 py-2.5">
           <span className="text-brand"><Icon name="shield" size={15} /></span>
-          <span className="text-[12.5px] text-brand font-medium">외부 표준 벤치마크에서 검증된 정확도 · 정적분석 그래프로 오탐 억제</span>
+          <span className="text-[12.5px] text-brand font-medium">신규 CVE 벤치마크에서 검증된 정확도 · 도메인 특화 학습으로 오탐 억제</span>
         </div>
 
         <div className="mt-3 flex flex-col gap-2">
