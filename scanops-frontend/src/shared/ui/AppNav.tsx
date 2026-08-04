@@ -5,6 +5,7 @@ import Icon, { type IconName } from './Icon'
 import Avatar from './Avatar'
 import { useAuth } from '../lib/auth'
 import { planById } from '../lib/mock'
+import { ENABLE_PRICING } from '../lib/config'
 
 interface NavItem { label: string; path: string; icon: IconName; match: (p: string) => boolean }
 
@@ -13,7 +14,7 @@ const ITEMS: NavItem[] = [
   { label: '스캔', path: '/scan', icon: 'target', match: (p) => p === '/scan' || /^\/scan\//.test(p) },
   { label: '스캔 기록', path: '/reports', icon: 'file-text', match: (p) => p.startsWith('/reports') || p.startsWith('/report/') },
   { label: '연동', path: '/integrations', icon: 'github', match: (p) => p.startsWith('/integrations') },
-  { label: '요금제', path: '/pricing', icon: 'credit-card', match: (p) => p.startsWith('/pricing') },
+  ...(ENABLE_PRICING ? [{ label: '요금제', path: '/pricing', icon: 'credit-card' as IconName, match: (p: string) => p.startsWith('/pricing') }] : []),
 ]
 
 /** Shared top navigation for authenticated app screens (V3 light theme). */
@@ -63,7 +64,7 @@ export default function AppNav() {
         >
           <Icon name="plus" size={15} /> 새 스캔
         </button>
-        {plan && (
+        {ENABLE_PRICING && plan && (
           <button
             onClick={() => navigate('/pricing')}
             className="px-2.5 py-1.5 rounded-full bg-brand-soft text-brand text-xs font-bold hover:bg-[#dceafe] transition-colors"
@@ -84,7 +85,9 @@ export default function AppNav() {
               </div>
               <MenuItem icon="user" label="마이페이지" onClick={() => { setMenu(false); navigate('/mypage') }} />
               <MenuItem icon="settings" label="설정" onClick={() => { setMenu(false); navigate('/settings') }} />
-              <MenuItem icon="credit-card" label="요금제·결제" onClick={() => { setMenu(false); navigate('/pricing') }} />
+              {ENABLE_PRICING && (
+                <MenuItem icon="credit-card" label="요금제·결제" onClick={() => { setMenu(false); navigate('/pricing') }} />
+              )}
               <div className="h-px bg-line" />
               <MenuItem icon="log-out" label="로그아웃" danger onClick={() => { setMenu(false); logout(); navigate('/') }} />
             </div>

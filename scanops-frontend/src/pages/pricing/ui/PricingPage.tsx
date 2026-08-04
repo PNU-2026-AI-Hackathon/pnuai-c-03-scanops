@@ -39,7 +39,7 @@ const TEAM_PLAN: DisplayPlan = {
   feats: [['DAST 웹 스캔', TEAM.dast], ['GitHub App / Actions', TEAM.actions], ['SAST 레포 분석', TEAM.sast], ['멤버 수', '기본 3명']],
 }
 const TEAM_ADDON: [string, string][] = [
-  ['멤버 추가', '1명당 +₩25,000'], ['DAST 웹 스캔', '+월 7회'],
+  ['멤버 추가', '1명당 +₩20,000'], ['DAST 웹 스캔', '+월 7회'],
   ['GitHub App / Actions', '+월 8만 줄'], ['SAST 레포 분석', '+월 15만 줄'],
 ]
 const OVERAGE: [string, string][] = [

@@ -16,6 +16,7 @@ import SettingsPage from '../pages/settings/ui/SettingsPage'
 import TeamPage from '../pages/team/ui/TeamPage'
 import PricingPage from '../pages/pricing/ui/PricingPage'
 import CheckoutPage from '../pages/checkout/ui/CheckoutPage'
+import { ENABLE_PRICING } from '../shared/lib/config'
 
 const Protected = ({ children }: { children: React.ReactNode }) => <ProtectedRoute>{children}</ProtectedRoute>
 
@@ -27,7 +28,7 @@ export default function AppRouter() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/auth/github/callback" element={<GitHubCallbackPage />} />
-      <Route path="/pricing" element={<PricingPage />} />
+      {ENABLE_PRICING && <Route path="/pricing" element={<PricingPage />} />}
 
       {/* authenticated */}
       <Route path="/onboarding" element={<Protected><OnboardingPage /></Protected>} />
@@ -40,7 +41,7 @@ export default function AppRouter() {
       <Route path="/mypage" element={<Protected><MyPage /></Protected>} />
       <Route path="/settings" element={<Protected><SettingsPage /></Protected>} />
       <Route path="/team" element={<Protected><TeamPage /></Protected>} />
-      <Route path="/checkout/:plan" element={<Protected><CheckoutPage /></Protected>} />
+      {ENABLE_PRICING && <Route path="/checkout/:plan" element={<Protected><CheckoutPage /></Protected>} />}
     </Routes>
   )
 }

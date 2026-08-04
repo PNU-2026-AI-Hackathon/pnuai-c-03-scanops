@@ -102,9 +102,9 @@ export interface PlanInfo {
 
 export const PLANS: PlanInfo[] = [
   { id: 'FREE', name: 'Free', price: 0, per: '', desc: '회원가입만 하면 바로 체험', dast: '1회 무료', sast: '미지원', actions: '미지원', highlight: '스캔 결과 1개월 보관' },
-  { id: 'PRO', name: 'Pro', price: 29900, per: '/월', desc: '개인·소규모 프로젝트에 추천', popular: true, trial: '7일 무료체험', dast: '월 5회', sast: '월 10만 줄', actions: '월 5만 줄', highlight: 'AI 브리핑·PDF 리포트' },
-  { id: 'MAX', name: 'Max', price: 99000, per: '/월', desc: '본격적인 보안 운영', dast: '월 30회', sast: '월 50만 줄', actions: '월 30만 줄', highlight: '우선 분석 큐' },
-  { id: 'TEAM', name: 'Team', price: 89000, per: '/월', desc: '기본 3명 포함 · 팀 단위 운영', dast: '월 20회', sast: '월 45만 줄', actions: '월 24만 줄', highlight: '멤버·권한 관리' },
+  { id: 'PRO', name: 'Pro', price: 19900, per: '/월', desc: '1인 개발자·바이브코더에게 추천', popular: true, trial: '7일 무료체험', dast: '월 5회', sast: '월 10만 줄', actions: '월 5만 줄', highlight: 'AI 브리핑·PDF 리포트' },
+  { id: 'MAX', name: 'Max', price: 69000, per: '/월', desc: '코드량이 많은 개인에게 추천', dast: '월 30회', sast: '월 50만 줄', actions: '월 30만 줄', highlight: '우선 분석 큐' },
+  { id: 'TEAM', name: 'Team', price: 59000, per: '/월', desc: '3~5인 스타트업 팀 · 기본 3명 포함', dast: '월 20회', sast: '월 45만 줄', actions: '월 24만 줄', highlight: '멤버·권한 관리' },
 ]
 
 export const planById = (id: PlanId) => PLANS.find((p) => p.id === id)!

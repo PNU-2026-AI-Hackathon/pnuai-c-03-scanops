@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Logo from '../../../shared/ui/Logo'
 import Icon, { type IconName } from '../../../shared/ui/Icon'
 import Button from '../../../shared/ui/Button'
+import { ENABLE_PRICING } from '../../../shared/lib/config'
 
 // ── data ─────────────────────────────────────────────────────────────────────
 
@@ -10,22 +11,22 @@ const NAV_LINKS = [
   { label: '성능', href: '#benchmark' },
   { label: '왜 다른가', href: '#why' },
   { label: '코드 보안', href: '#security' },
-  { label: '요금제', href: '#pricing' },
+  ...(ENABLE_PRICING ? [{ label: '요금제', href: '#pricing' }] : []),
 ]
 
 const stats = [
-  { value: '80.5', label: 'F1 · 신규 CVE 벤치마크 (Grok-4 54.1)' },
-  { value: '79.7%', label: '취약점 재현율 (Grok-4 57.2%)' },
+  { value: '80.5', label: 'F1 · 신규 CVE 벤치마크 (Claude Sonnet 5 60.0)' },
+  { value: '15.7%', label: '오탐률 · Claude Sonnet 5는 79.5%' },
   { value: '1~2분', label: '평균 분석 소요 시간' },
   { value: '0건', label: '외부로 나가는 소스코드' },
 ]
 
 // 2026-07 rebuild 모델 — CVEfixes 시간분할 test 1,197건(2023-07 이후 신규 CVE),
-// 동일 프롬프트·파서·채점으로 Grok-4와 비교 · 재현 가능(temperature=0)
+// 동일 프롬프트·파서·채점으로 Claude Sonnet 5와 비교 · 재현 가능(temperature=0)
 const compare = [
-  { label: 'F1 점수', scanops: 80.5, grok: 54.1 },
-  { label: '취약점 재현율', scanops: 79.7, grok: 57.2 },
-  { label: '종합 정확도', scanops: 82.2, grok: 55.1 },
+  { label: 'F1 점수', scanops: 80.5, rival: 60.0 },
+  { label: '취약점 재현율', scanops: 79.7, rival: 82.6 },
+  { label: '정밀도', scanops: 81.3, rival: 47.1 },
 ]
 
 const whyCards: { icon: IconName; title: string; desc: string }[] = [
@@ -42,7 +43,7 @@ const whyCards: { icon: IconName; title: string; desc: string }[] = [
   {
     icon: 'shield',
     title: '오탐을 학습으로 걸러냄',
-    desc: '실제 취약 코드와 패치된 안전 코드 쌍으로 집중 학습해, 안전한 코드를 위험하다고 잘못 경고하는 오탐률(15.7%)을 상용 대형 모델(Grok-4 46.7%) 대비 크게 낮췄습니다.',
+    desc: '실제 취약 코드와 패치된 안전 코드 쌍으로 집중 학습해, 안전한 코드를 위험하다고 잘못 경고하는 오탐률(15.7%)을 상용 최상위 모델(Claude Sonnet 5 79.5%) 대비 크게 낮췄습니다.',
   },
 ]
 
@@ -54,8 +55,8 @@ const scanModes: { tag: string; icon: IconName; accent: string; soft: string; ti
 
 const plans = [
   { name: 'Free', price: '₩0', per: '', desc: '가입하고 가볍게 체험', feats: ['DAST 웹 스캔 1회', '결과 1개월 보관'], primary: false },
-  { name: 'Pro', price: '₩29,900', per: '/월', desc: '개인·소규모 팀에 추천', feats: ['DAST 월 5회', 'SAST 월 10만 줄', 'PR 자동 분석', 'AI 브리핑·PDF'], primary: true },
-  { name: 'Max', price: '₩99,000', per: '/월', desc: '본격적인 보안 운영', feats: ['DAST 월 30회', 'SAST 월 50만 줄', '우선 분석 큐'], primary: false },
+  { name: 'Pro', price: '₩19,900', per: '/월', desc: '1인 개발자·바이브코더에게 추천', feats: ['DAST 월 5회', 'SAST 월 10만 줄', 'PR 자동 분석', 'AI 브리핑·PDF'], primary: true },
+  { name: 'Max', price: '₩69,000', per: '/월', desc: '코드량이 많은 개인에게 추천', feats: ['DAST 월 30회', 'SAST 월 50만 줄', '우선 분석 큐'], primary: false },
 ]
 
 // ── page ─────────────────────────────────────────────────────────────────────
@@ -127,7 +128,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-6 pt-20 relative z-10 sm:pt-24 pb-12 text-center flex flex-col items-center">
           <div className="mb-6 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-soft border border-line text-[12.5px] font-semibold text-ink-sub shadow-[0px_1px_3px_rgba(0,0,0,0.05)]">
             <span className="text-brand"><Icon name="shield" size={14} /></span>
-            신규 CVE 벤치마크에서 상용 Grok-4 초월
+            신규 CVE 벤치마크에서 오탐률 상용 대비 5분의 1
           </div>
           <h1 className="text-[40px] sm:text-[60px] font-extrabold tracking-tight leading-[1.08]">
             당신의 코드는,
@@ -135,7 +136,7 @@ export default function LandingPage() {
             <span className="text-brand">안전한가요?</span>
           </h1>
           <p className="mt-6 max-w-2xl text-[18px] sm:text-[20px] text-ink-sub leading-relaxed break-keep [text-wrap:balance]">
-            ChatGPT·Grok 같은 범용 AI가 놓치는 취약점까지, 보안만 집중 학습한 ScanOps가 찾아냅니다.
+            ChatGPT·Claude 같은 범용 AI가 놓치는 취약점까지, 보안만 집중 학습한 ScanOps가 찾아냅니다.
           </p>
           <p className="mt-2 max-w-2xl text-[18px] sm:text-[20px] text-ink-sub leading-relaxed break-keep [text-wrap:balance]">
             URL이나 GitHub 레포만 넣으면 위험도와 고치는 방법까지, 한국어 리포트로 알려드려요.
@@ -167,7 +168,7 @@ export default function LandingPage() {
       {/* Benchmark */}
       <section id="benchmark" className="py-[120px] px-6">
         <div className="max-w-5xl mx-auto">
-          <SectionHeading tag="성능" title="범용 AI보다 더 잡고, 덜 틀립니다" sub="같은 코드를 넣어도 결과가 다릅니다. 보안에만 특화 학습된 ScanOps는 더 많이 찾고, 덜 틀립니다. 우리가 만들지 않은 외부 표준 평가셋으로 검증했어요." />
+          <SectionHeading tag="성능" title="범용 AI와 대등하게 잡고, 훨씬 덜 틀립니다" sub="같은 코드를 넣어도 결과가 다릅니다. 보안에만 특화 학습된 ScanOps는 상용 최상위 모델과 대등한 재현율로, 오탐은 5분의 1 수준입니다. 우리가 만들지 않은 외부 표준 평가셋으로도 검증했어요." />
           <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-5">
             <div className="rounded-2xl bg-white border border-line p-7">
               <p className="text-[15px] font-bold text-ink mb-1">신규 CVE 벤치마크 (1,197건)</p>
@@ -175,7 +176,7 @@ export default function LandingPage() {
               {compare.map((c) => <CompareBar key={c.label} {...c} />)}
               <div className="mt-6 flex items-center gap-5 text-xs">
                 <Legend color="var(--color-brand)" label="ScanOps" />
-                <Legend color="var(--color-line-strong)" label="Grok-4 (상용)" />
+                <Legend color="var(--color-line-strong)" label="Claude Sonnet 5 (상용)" />
               </div>
             </div>
             <div className="rounded-2xl bg-ink p-7 flex flex-col self-start">
@@ -189,8 +190,8 @@ export default function LandingPage() {
                   <p className="text-[34px] font-extrabold text-white mt-1 tnum leading-none">15.7<span className="text-lg">%</span></p>
                 </div>
                 <div className="rounded-xl bg-white/5 border border-white/10 p-5">
-                  <p className="text-[11px] text-ink-faint font-medium">Grok-4 오탐률</p>
-                  <p className="text-[34px] font-extrabold text-ink-faint mt-1 tnum leading-none">46.7<span className="text-lg">%</span></p>
+                  <p className="text-[11px] text-ink-faint font-medium">Claude Sonnet 5 오탐률</p>
+                  <p className="text-[34px] font-extrabold text-ink-faint mt-1 tnum leading-none">79.5<span className="text-lg">%</span></p>
                 </div>
               </div>
               <p className="mt-6 text-[12px] text-ink-faint leading-relaxed">* CVEfixes 시간분할 test 1,197건(2023-07 이후 신규 CVE) · 동일 프롬프트·채점 · 재현 가능(temperature=0).</p>
@@ -260,41 +261,43 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing teaser */}
-      <section id="pricing" className="py-[120px] px-6">
-        <div className="max-w-5xl mx-auto">
-          <SectionHeading tag="요금제" title="필요한 만큼만, 합리적으로" sub="회원가입하면 DAST 1회를 무료로 체험할 수 있어요. Pro는 7일 무료체험을 제공하며, 언제든 해지할 수 있습니다." />
-          <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
-            {plans.map((p) => (
-              <div key={p.name} className={`rounded-2xl bg-white p-6 flex flex-col ${p.primary ? 'border-2 border-brand' : 'border border-line'}`}>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold">{p.name}</h3>
-                  {p.primary && <span className="px-2 py-0.5 rounded-full bg-brand text-white text-[11px] font-bold">인기</span>}
+      {ENABLE_PRICING && (
+        <section id="pricing" className="py-[120px] px-6">
+          <div className="max-w-5xl mx-auto">
+            <SectionHeading tag="요금제" title="필요한 만큼만, 합리적으로" sub="회원가입하면 DAST 1회를 무료로 체험할 수 있어요. Pro는 7일 무료체험을 제공하며, 언제든 해지할 수 있습니다." />
+            <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
+              {plans.map((p) => (
+                <div key={p.name} className={`rounded-2xl bg-white p-6 flex flex-col ${p.primary ? 'border-2 border-brand' : 'border border-line'}`}>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold">{p.name}</h3>
+                    {p.primary && <span className="px-2 py-0.5 rounded-full bg-brand text-white text-[11px] font-bold">인기</span>}
+                  </div>
+                  <p className="mt-1 text-[13px] text-ink-muted">{p.desc}</p>
+                  <div className="mt-4 flex items-baseline gap-0.5">
+                    <span className="text-[28px] font-bold tracking-tight tnum">{p.price}</span>
+                    <span className="text-sm text-ink-muted font-medium">{p.per}</span>
+                  </div>
+                  <Button variant={p.primary ? 'primary' : 'outline'} block className="mt-5" onClick={() => navigate('/signup')}>
+                    {p.name === 'Free' ? '무료로 시작' : `${p.name} 시작하기`}
+                  </Button>
+                  <ul className="mt-5 flex flex-col gap-2.5">
+                    {p.feats.map((f) => (
+                      <li key={f} className="flex items-center gap-2 text-[13px] text-ink-sub">
+                        <span className="text-success"><Icon name="check" size={14} strokeWidth={3} /></span>{f}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <p className="mt-1 text-[13px] text-ink-muted">{p.desc}</p>
-                <div className="mt-4 flex items-baseline gap-0.5">
-                  <span className="text-[28px] font-bold tracking-tight tnum">{p.price}</span>
-                  <span className="text-sm text-ink-muted font-medium">{p.per}</span>
-                </div>
-                <Button variant={p.primary ? 'primary' : 'outline'} block className="mt-5" onClick={() => navigate('/signup')}>
-                  {p.name === 'Free' ? '무료로 시작' : `${p.name} 시작하기`}
-                </Button>
-                <ul className="mt-5 flex flex-col gap-2.5">
-                  {p.feats.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-[13px] text-ink-sub">
-                      <span className="text-success"><Icon name="check" size={14} strokeWidth={3} /></span>{f}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+              ))}
+            </div>
+            <div className="mt-8 text-center">
+              <button onClick={() => navigate('/pricing')} className="text-brand text-sm font-semibold hover:underline inline-flex items-center gap-1">
+                팀 플랜·전체 비교 보기 <Icon name="arrow-right" size={15} />
+              </button>
+            </div>
           </div>
-          <div className="mt-8 text-center">
-            <button onClick={() => navigate('/pricing')} className="text-brand text-sm font-semibold hover:underline inline-flex items-center gap-1">
-              팀 플랜·전체 비교 보기 <Icon name="arrow-right" size={15} />
-            </button>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* GitHub App CTA */}
       <section className="py-[120px] px-6 bg-surface border-y border-line">
@@ -342,7 +345,7 @@ function SectionHeading({ tag, title, sub }: { tag: string; title: string; sub: 
   )
 }
 
-function CompareBar({ label, scanops, grok }: { label: string; scanops: number; grok: number }) {
+function CompareBar({ label, scanops, rival }: { label: string; scanops: number; rival: number }) {
   return (
     <div className="mb-5 last:mb-0">
       <p className="text-[13px] font-medium text-ink-sub mb-2">{label}</p>
@@ -354,9 +357,9 @@ function CompareBar({ label, scanops, grok }: { label: string; scanops: number; 
       </div>
       <div className="flex items-center gap-2.5">
         <div className="flex-1 h-2.5 rounded-full bg-field overflow-hidden">
-          <div className="h-full rounded-full bg-line-strong" style={{ width: `${grok}%` }} />
+          <div className="h-full rounded-full bg-line-strong" style={{ width: `${rival}%` }} />
         </div>
-        <span className="w-12 text-right text-[13px] font-semibold text-ink-muted tnum">{grok}</span>
+        <span className="w-12 text-right text-[13px] font-semibold text-ink-muted tnum">{rival}</span>
       </div>
     </div>
   )
