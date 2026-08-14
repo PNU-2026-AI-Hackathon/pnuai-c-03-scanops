@@ -55,8 +55,8 @@ const scanModes: { tag: string; icon: IconName; accent: string; soft: string; ti
 
 const plans = [
   { name: 'Free', price: '₩0', per: '', desc: '가입하고 가볍게 체험', feats: ['DAST 웹 스캔 1회', '결과 1개월 보관'], primary: false },
-  { name: 'Pro', price: '₩19,900', per: '/월', desc: '1인 개발자·바이브코더에게 추천', feats: ['DAST 월 5회', 'SAST 월 10만 줄', 'PR 자동 분석', 'AI 브리핑·PDF'], primary: true },
-  { name: 'Max', price: '₩69,000', per: '/월', desc: '코드량이 많은 개인에게 추천', feats: ['DAST 월 30회', 'SAST 월 50만 줄', '우선 분석 큐'], primary: false },
+  { name: 'Pro', price: '₩19,900', per: '/월', desc: '1인 개발자·바이브코더에게 추천', feats: ['DAST 월 5회', 'SAST·액션 월 10만 줄', 'PR 자동 분석', 'AI 브리핑·PDF'], primary: true },
+  { name: 'Max', price: '₩69,000', per: '/월', desc: '코드량이 많은 개인에게 추천', feats: ['DAST 월 30회', 'SAST·액션 월 40만 줄', '우선 분석 큐'], primary: false },
 ]
 
 // ── page ─────────────────────────────────────────────────────────────────────

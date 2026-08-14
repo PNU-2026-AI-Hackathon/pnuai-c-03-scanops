@@ -7,14 +7,21 @@ import Badge from '../../../shared/ui/Badge'
 import Avatar from '../../../shared/ui/Avatar'
 import Icon, { type IconName } from '../../../shared/ui/Icon'
 import ProgressBar from '../../../shared/ui/ProgressBar'
+import Modal from '../../../shared/ui/Modal'
+import { useToast } from '../../../shared/ui/Toast'
 import { useAuth } from '../../../shared/lib/auth'
-import { fetchUsage, planById, won, type Usage } from '../../../shared/lib/mock'
+import { planById, won } from '../../../shared/lib/mock'
+import { fetchWallet, purchaseDast, purchaseTokens, type TokenWallet } from '../../../shared/api/tokens'
+
+type TopUpKind = 'DAST' | 'TOKEN'
 
 export default function MyPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const [usage, setUsage] = useState<Usage | null>(null)
-  useEffect(() => { fetchUsage().then(setUsage) }, [])
+  const [wallet, setWallet] = useState<TokenWallet | null>(null)
+  const [topUp, setTopUp] = useState<TopUpKind | null>(null)
+  const reload = () => fetchWallet().then(setWallet).catch(() => setWallet(null))
+  useEffect(() => { reload() }, [])
   if (!user) return null
   const plan = planById(user.plan)
 
@@ -41,23 +48,32 @@ export default function MyPage() {
           </div>
         </Card>
 
-        {/* plan + usage */}
+        {/* plan + token balance */}
         <Card pad="lg" className="mt-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-[17px] font-bold text-ink">{plan.name} 플랜</h2>
               {plan.id === 'PRO' && <Badge tone="brand" size="sm">인기</Badge>}
+              {wallet?.team && <Badge tone="neutral" size="sm">팀 공유 지갑</Badge>}
             </div>
             <Button size="sm" variant="weak" onClick={() => navigate('/pricing')}>플랜 변경</Button>
           </div>
           <p className="mt-0.5 text-[13px] text-ink-muted">
-            {plan.price === 0 ? '무료' : `${won(plan.price)}${plan.per}`} · 다음 결제일 {usage ? new Date(usage.periodEnd).toLocaleDateString('ko-KR') : '—'}
+            {plan.price === 0 ? '무료' : `${won(plan.price)}${plan.per}`}
+            {wallet?.periodEnd && ` · 다음 결제일 ${new Date(wallet.periodEnd).toLocaleDateString('ko-KR')}`}
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
-            <UsageRow icon="globe" label="DAST" used={usage?.dastUsed} limit={usage?.dastLimit} unit="회" color="var(--color-scan-web)" />
-            <UsageRow icon="box" label="SAST" used={usage?.sastUsed} limit={usage?.sastLimit} unit="줄" color="var(--color-scan-code)" big />
-            <UsageRow icon="git-pull-request" label="PR 분석" used={usage?.actionsUsed} limit={usage?.actionsLimit} unit="줄" color="var(--color-scan-pr)" big />
+          <TokenBalance wallet={wallet} />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            <CapacityTile
+              icon="globe" label="웹사이트 점검" value={wallet?.websiteScansLeft} unit="회 더 가능"
+              color="var(--color-scan-web)" onTopUp={wallet ? () => setTopUp('DAST') : undefined}
+            />
+            <CapacityTile
+              icon="box" label="소스코드 점검" value={wallet?.sourceLinesLeft} unit="줄 더 가능"
+              color="var(--color-scan-code)" big onTopUp={wallet ? () => setTopUp('TOKEN') : undefined}
+            />
           </div>
         </Card>
 
@@ -69,23 +85,147 @@ export default function MyPage() {
           <QuickLink icon="file-text" title="스캔 기록" sub="지난 리포트" onClick={() => navigate('/reports')} />
         </div>
       </main>
+
+      {wallet && topUp && (
+        <TopUpModal
+          kind={topUp}
+          wallet={wallet}
+          onClose={() => setTopUp(null)}
+          onDone={(w) => { setWallet(w); setTopUp(null) }}
+        />
+      )}
     </div>
   )
 }
 
-function UsageRow({ icon, label, used, limit, unit, color, big }: { icon: IconName; label: string; used?: number; limit?: number; unit: string; color: string; big?: boolean }) {
-  const ready = used != null && limit != null
-  const pct = ready ? Math.min(100, (used! / limit!) * 100) : 0
-  const over = ready && used! > limit!
+/**
+ * 토큰(SAST·액션) 또는 DAST(웹 점검) 횟수 충전. 둘 다 5,000원 단위 구좌를 산다.
+ *
+ * ⚠️ PG 미연동 — 실제 카드 승인 없이 백엔드가 즉시 확정한다(개발/데모 전용, 다른 결제
+ * 흐름과 동일한 한계). 결제 지연만 흉내 낸다.
+ */
+function TopUpModal({ kind, wallet, onClose, onDone }: {
+  kind: TopUpKind; wallet: TokenWallet; onClose: () => void; onDone: (w: TokenWallet) => void
+}) {
+  const { toast } = useToast()
+  const [units, setUnits] = useState(1)
+  const [loading, setLoading] = useState(false)
+
+  const isDast = kind === 'DAST'
+  const priceKrw = isDast ? wallet.dastTopUpPriceKrw : wallet.topUpPriceKrw
+  const amountPerUnit = isDast ? wallet.dastTopUpCount : wallet.topUpTokens
+  const totalAmount = amountPerUnit * units
+  const totalPrice = priceKrw * units
+  const amountLabel = isDast ? `${totalAmount}회` : `${totalAmount.toLocaleString('ko-KR')}토큰`
+
+  const confirm = async () => {
+    setLoading(true)
+    try {
+      await new Promise((r) => setTimeout(r, 900)) // 목업 결제 지연
+      await (isDast ? purchaseDast(units) : purchaseTokens(units))
+      const fresh = await fetchWallet()
+      onDone(fresh)
+      toast(`${amountLabel} 충전됐어요`, 'success')
+    } catch (e) {
+      toast(e instanceof Error ? e.message : '충전에 실패했어요', 'danger')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={isDast ? 'DAST(웹 점검) 충전' : '토큰(SAST·액션) 충전'}
+      footer={
+        <>
+          <Button variant="ghost" block onClick={onClose}>취소</Button>
+          <Button block loading={loading} onClick={confirm}>{won(totalPrice)} 결제하기</Button>
+        </>
+      }
+    >
+      <p className="text-[13.5px] text-ink-sub leading-relaxed">
+        {isDast
+          ? `${won(priceKrw)}에 웹사이트 점검 ${amountPerUnit}회를 충전해요. 이월되어 다음 달에도 쓸 수 있어요.`
+          : `${won(priceKrw)}에 ${amountPerUnit.toLocaleString('ko-KR')}토큰을 충전해요. 이월되어 다음 달에도 쓸 수 있어요.`}
+      </p>
+
+      <div className="mt-4 flex items-center justify-between rounded-xl bg-surface border border-line px-4 py-3">
+        <span className="text-[13.5px] font-medium text-ink-sub">구좌 수</span>
+        <div className="flex items-center gap-3">
+          <button
+            type="button" onClick={() => setUnits((u) => Math.max(1, u - 1))}
+            className="w-8 h-8 rounded-lg bg-white border border-line-strong text-ink flex items-center justify-center hover:bg-field disabled:opacity-40"
+            disabled={units <= 1}
+          ><Icon name="minus" size={14} /></button>
+          <span className="w-8 text-center text-[15px] font-bold tnum">{units}</span>
+          <button
+            type="button" onClick={() => setUnits((u) => Math.min(20, u + 1))}
+            className="w-8 h-8 rounded-lg bg-white border border-line-strong text-ink flex items-center justify-center hover:bg-field"
+          ><Icon name="plus" size={14} /></button>
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between px-1">
+        <span className="text-[13px] text-ink-muted">충전량</span>
+        <span className="text-[13.5px] font-semibold text-ink tnum">{amountLabel}</span>
+      </div>
+      <div className="mt-1 flex items-center justify-between px-1">
+        <span className="text-[13px] text-ink-muted">결제 금액</span>
+        <span className="text-[15px] font-bold text-ink tnum">{won(totalPrice)}</span>
+      </div>
+    </Modal>
+  )
+}
+
+/** 이번 달 지급량 대비 남은 토큰. 진행 중인 스캔이 예약해 둔 만큼은 별도 표기. */
+function TokenBalance({ wallet }: { wallet: TokenWallet | null }) {
+  const ready = wallet != null
+  const pct = ready && wallet.monthlyGrant > 0 ? Math.min(100, (wallet.available / wallet.monthlyGrant) * 100) : 0
+  const low = ready && wallet.monthlyGrant > 0 && pct < 15
+  const fmt = (n: number) => n.toLocaleString('ko-KR')
+
+  return (
+    <div className="mt-5 rounded-xl bg-surface border border-line p-4">
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-sub">
+          <span style={{ color: 'var(--color-brand)' }}><Icon name="zap" size={14} /></span>남은 토큰
+        </span>
+        {low && <Badge tone="warning" size="sm">부족</Badge>}
+      </div>
+      <p className="mt-1.5 text-ink">
+        <span className="text-[20px] font-bold tnum">{ready ? fmt(wallet.available) : '—'}</span>
+        <span className="text-[12.5px] text-ink-muted"> / 이번 달 {ready ? fmt(wallet.monthlyGrant) : '—'}토큰</span>
+      </p>
+      <ProgressBar value={pct} color={low ? 'var(--color-warning)' : 'var(--color-brand)'} className="mt-2" height={5} />
+      {ready && wallet.heldBalance > 0 && (
+        <p className="mt-2 text-[12px] text-ink-faint">진행 중인 스캔이 {fmt(wallet.heldBalance)}토큰 예약해 뒀어요.</p>
+      )}
+      {ready && wallet.purchasedBalance > 0 && (
+        <p className="mt-1 text-[12px] text-ink-faint">이 중 충전분 {fmt(wallet.purchasedBalance)}토큰은 다음 달로 이월돼요.</p>
+      )}
+    </div>
+  )
+}
+
+function CapacityTile({ icon, label, value, unit, color, big, onTopUp }: {
+  icon: IconName; label: string; value?: number; unit: string; color: string; big?: boolean; onTopUp?: () => void
+}) {
+  const ready = value != null
   const fmt = (n: number) => (big ? n.toLocaleString('ko-KR') : String(n))
   return (
     <div className="rounded-xl bg-surface border border-line p-3.5">
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-sub"><span style={{ color }}><Icon name={icon} size={14} /></span>{label}</span>
-        {over && <Badge tone="warning" size="sm">초과</Badge>}
+        {onTopUp && (
+          <button
+            type="button" onClick={onTopUp}
+            className="text-[11.5px] font-semibold text-brand hover:text-brand-hover flex items-center gap-0.5"
+          ><Icon name="plus" size={12} />충전</button>
+        )}
       </div>
-      <p className="mt-1.5 text-ink"><span className="text-[16px] font-bold tnum">{ready ? fmt(used!) : '—'}</span><span className="text-[12px] text-ink-muted"> / {ready ? fmt(limit!) : '—'}{unit}</span></p>
-      <ProgressBar value={pct} color={over ? 'var(--color-warning)' : color} className="mt-2" height={5} />
+      <p className="mt-1.5 text-ink"><span className="text-[16px] font-bold tnum">{ready ? fmt(value!) : '—'}</span><span className="text-[12px] text-ink-muted"> {unit}</span></p>
     </div>
   )
 }

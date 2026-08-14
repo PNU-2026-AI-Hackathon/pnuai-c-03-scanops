@@ -40,6 +40,10 @@ interface AuthState {
   completeGitHub: (login: string) => Promise<User>
   logout: () => void
   update: (patch: Partial<User>) => void
+  /** Re-fetches /api/auth/me with the current session token — call after any
+   *  backend change that can affect the profile (e.g. plan/subscription updates)
+   *  so `user.plan` doesn't go stale until next login. */
+  refreshUser: () => Promise<void>
 }
 
 const Ctx = createContext<AuthState | null>(null)
@@ -120,6 +124,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(TOKEN_KEY)
     set(null)
   }
+  const refreshUser = async () => {
+    const token = getToken()
+    if (token) await loginWithToken(token)
+  }
   const update = (patch: Partial<User>) => setUser((u) => {
     if (!u) return u
     const next = { ...u, ...patch }
@@ -128,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   })
 
   return (
-    <Ctx.Provider value={{ user, ready, login, signup, loginWithToken, completeGitHub, logout, update }}>
+    <Ctx.Provider value={{ user, ready, login, signup, loginWithToken, completeGitHub, logout, update, refreshUser }}>
       {children}
     </Ctx.Provider>
   )

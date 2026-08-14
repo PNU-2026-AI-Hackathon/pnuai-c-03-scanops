@@ -8,11 +8,12 @@ import Icon from '../../../shared/ui/Icon'
 import { useAuth } from '../../../shared/lib/auth'
 import { useToast } from '../../../shared/ui/Toast'
 import { PLANS, won, type PlanId } from '../../../shared/lib/mock'
+import { activateSubscription, startTrial } from '../../../shared/api/subscriptions'
 
 export default function CheckoutPage() {
   const { plan: planParam } = useParams<{ plan: string }>()
   const navigate = useNavigate()
-  const { update } = useAuth()
+  const { refreshUser } = useAuth()
   const { toast } = useToast()
   const plan = PLANS.find((p) => p.id === (planParam?.toUpperCase() as PlanId)) ?? PLANS[1]
   const [loading, setLoading] = useState(false)
@@ -21,14 +22,33 @@ export default function CheckoutPage() {
   const vat = Math.round(plan.price * 0.1)
   const total = plan.price + vat
 
+  /**
+   * ⚠️ PG 미연동 — 카드 입력값은 검증하지 않고, 백엔드가 결제 성공을 가정하고 바로
+   * 구독을 확정한다(다른 결제 흐름과 동일한 한계, 운영 배포 전 PG 연동 필수).
+   */
   const pay = async () => {
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 1100))
-    update({ plan: plan.id })
-    setLoading(false)
-    setDone(true)
-    toast(`${plan.name} 플랜이 시작됐어요`, 'success')
-    setTimeout(() => navigate('/dashboard', { replace: true }), 1400)
+    try {
+      await new Promise((r) => setTimeout(r, 1100)) // 목업 결제 지연
+      if (plan.trial) {
+        try {
+          await startTrial()
+        } catch {
+          // 이미 체험을 썼던 계정이면 바로 결제로 전환
+          await activateSubscription(plan.id)
+        }
+      } else {
+        await activateSubscription(plan.id)
+      }
+      await refreshUser() // /api/auth/me를 다시 불러 nav·마이페이지의 플랜 표시를 갱신
+      setDone(true)
+      toast(`${plan.name} 플랜이 시작됐어요`, 'success')
+      setTimeout(() => navigate('/dashboard', { replace: true }), 1400)
+    } catch (e) {
+      toast(e instanceof Error ? e.message : '결제에 실패했어요', 'danger')
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (done) {

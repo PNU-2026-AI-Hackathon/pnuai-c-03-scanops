@@ -26,8 +26,7 @@ const PERSONAL: DisplayPlan[] = (['FREE', 'PRO', 'MAX'] as PlanId[]).map((id) =>
     popular: p.popular, trial: p.trial,
     feats: [
       ['DAST 웹 스캔', p.dast],
-      ['GitHub App / Actions', p.actions],
-      ['SAST 레포 분석', p.sast],
+      ['SAST · GitHub App 액션', p.sastActions],
       ['핵심 혜택', p.highlight],
     ],
   }
@@ -36,14 +35,15 @@ const PERSONAL: DisplayPlan[] = (['FREE', 'PRO', 'MAX'] as PlanId[]).map((id) =>
 const TEAM = PLANS.find((p) => p.id === 'TEAM')!
 const TEAM_PLAN: DisplayPlan = {
   id: 'TEAM', name: TEAM.name, price: won(TEAM.price), per: TEAM.per, desc: TEAM.desc, popular: true,
-  feats: [['DAST 웹 스캔', TEAM.dast], ['GitHub App / Actions', TEAM.actions], ['SAST 레포 분석', TEAM.sast], ['멤버 수', '기본 3명']],
+  feats: [['DAST 웹 스캔', TEAM.dast], ['SAST · GitHub App 액션', TEAM.sastActions], ['멤버 수', '기본 3명']],
 }
+// 멤버 1명 추가 시 SAST·액션 공용 토큰 +69,000(=23만 줄 상당)이 그대로 늘어난다.
 const TEAM_ADDON: [string, string][] = [
   ['멤버 추가', '1명당 +₩20,000'], ['DAST 웹 스캔', '+월 7회'],
-  ['GitHub App / Actions', '+월 8만 줄'], ['SAST 레포 분석', '+월 15만 줄'],
+  ['SAST · GitHub App 액션', '+월 23만 줄'],
 ]
 const OVERAGE: [string, string][] = [
-  ['SAST 레포 분석', '1만 줄당 ₩5,000'], ['GitHub App / Actions', '1만 줄당 ₩5,000'], ['DAST 웹 스캔', '3회당 ₩5,000'],
+  ['SAST · GitHub App 액션', '1만 줄당 ₩5,000'], ['DAST 웹 스캔', '3회당 ₩5,000'],
 ]
 
 export default function PricingPage() {
@@ -74,7 +74,8 @@ export default function PricingPage() {
           <Badge tone="brand">요금제</Badge>
           <h1 className="text-3xl font-bold text-ink tracking-tight">필요한 만큼만, 합리적으로</h1>
           <p className="text-[15px] text-ink-muted max-w-xl">
-            회원가입하면 DAST 1회를 무료로 체험할 수 있어요. Pro는 7일 무료체험을 제공하며, 모든 플랜은 언제든 해지할 수 있습니다.
+            회원가입하면 DAST 1회를 무료로 체험할 수 있어요. 
+            Pro는 7일 무료체험을 제공하며, 모든 플랜은 언제든 해지할 수 있습니다.
           </p>
         </div>
 

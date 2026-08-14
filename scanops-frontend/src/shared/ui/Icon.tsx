@@ -13,7 +13,7 @@ export type IconName =
   | 'arrow-right' | 'arrow-left' | 'external-link'
   | 'search' | 'clock' | 'calendar' | 'file-text' | 'settings'
   | 'user' | 'users' | 'log-out' | 'log-in'
-  | 'plus' | 'zap' | 'lock' | 'mail' | 'eye' | 'eye-off'
+  | 'plus' | 'minus' | 'zap' | 'lock' | 'mail' | 'eye' | 'eye-off'
   | 'download' | 'refresh-cw' | 'copy' | 'bell' | 'credit-card'
   | 'bar-chart-2' | 'activity' | 'folder' | 'play' | 'trash-2'
   | 'more-horizontal' | 'filter' | 'loader' | 'home' | 'cpu' | 'layers'
@@ -53,6 +53,7 @@ const PATHS: Record<IconName, string> = {
   'log-out': '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
   'log-in': '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>',
   plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  minus: '<line x1="5" y1="12" x2="19" y2="12"/>',
   zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
   lock: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
   mail: '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',

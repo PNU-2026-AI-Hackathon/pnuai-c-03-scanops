@@ -86,6 +86,11 @@ export interface TeamMember {
 }
 
 // ── plan catalog ─────────────────────────────────────────────────────────
+/**
+ * SAST(레포 분석)와 GitHub App(액션)은 별도 한도가 아니라 토큰 하나를 공유해서 쓴다
+ * (0.3 토큰/줄로 단가가 같다) — 그래서 `sastActions` 한 필드로 합쳐서 표시한다.
+ * DAST(웹 점검)만 별도 통(횟수)이다.
+ */
 export interface PlanInfo {
   id: PlanId
   name: string
@@ -95,16 +100,16 @@ export interface PlanInfo {
   popular?: boolean
   trial?: string
   dast: string
-  sast: string
-  actions: string
+  /** SAST + GitHub App 액션 공용 토큰 한도. */
+  sastActions: string
   highlight: string
 }
 
 export const PLANS: PlanInfo[] = [
-  { id: 'FREE', name: 'Free', price: 0, per: '', desc: '회원가입만 하면 바로 체험', dast: '1회 무료', sast: '미지원', actions: '미지원', highlight: '스캔 결과 1개월 보관' },
-  { id: 'PRO', name: 'Pro', price: 19900, per: '/월', desc: '1인 개발자·바이브코더에게 추천', popular: true, trial: '7일 무료체험', dast: '월 5회', sast: '월 10만 줄', actions: '월 5만 줄', highlight: 'AI 브리핑·PDF 리포트' },
-  { id: 'MAX', name: 'Max', price: 69000, per: '/월', desc: '코드량이 많은 개인에게 추천', dast: '월 30회', sast: '월 50만 줄', actions: '월 30만 줄', highlight: '우선 분석 큐' },
-  { id: 'TEAM', name: 'Team', price: 59000, per: '/월', desc: '3~5인 스타트업 팀 · 기본 3명 포함', dast: '월 20회', sast: '월 45만 줄', actions: '월 24만 줄', highlight: '멤버·권한 관리' },
+  { id: 'FREE', name: 'Free', price: 0, per: '', desc: '회원가입만 하면 바로 체험', dast: '1회 무료', sastActions: '미지원', highlight: '스캔 결과 1개월 보관' },
+  { id: 'PRO', name: 'Pro', price: 19900, per: '/월', desc: '1인 개발자·바이브코더에게 추천', popular: true, trial: '7일 무료체험', dast: '월 5회', sastActions: '월 10만 줄', highlight: 'AI 브리핑·PDF 리포트' },
+  { id: 'MAX', name: 'Max', price: 69000, per: '/월', desc: '코드량이 많은 개인에게 추천', dast: '월 30회', sastActions: '월 40만 줄', highlight: '우선 분석 큐' },
+  { id: 'TEAM', name: 'Team', price: 59000, per: '/월', desc: '3~5인 스타트업 팀 · 기본 3명 포함', dast: '월 20회', sastActions: '월 33만 줄', highlight: '멤버·권한 관리' },
 ]
 
 export const planById = (id: PlanId) => PLANS.find((p) => p.id === id)!
