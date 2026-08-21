@@ -12,6 +12,7 @@ import { useToast } from '../../../shared/ui/Toast'
 import { useAuth } from '../../../shared/lib/auth'
 import { planById, won } from '../../../shared/lib/mock'
 import { fetchWallet, purchaseDast, purchaseTokens, type TokenWallet } from '../../../shared/api/tokens'
+import { fetchSurveyStatus } from '../../../shared/api/survey'
 
 type TopUpKind = 'DAST' | 'TOKEN'
 
@@ -20,8 +21,12 @@ export default function MyPage() {
   const { user } = useAuth()
   const [wallet, setWallet] = useState<TokenWallet | null>(null)
   const [topUp, setTopUp] = useState<TopUpKind | null>(null)
+  const [surveyDone, setSurveyDone] = useState(false)
   const reload = () => fetchWallet().then(setWallet).catch(() => setWallet(null))
-  useEffect(() => { reload() }, [])
+  useEffect(() => {
+    reload()
+    fetchSurveyStatus().then((s) => setSurveyDone(s.completed)).catch(() => {})
+  }, [])
   if (!user) return null
   const plan = planById(user.plan)
 
@@ -75,6 +80,27 @@ export default function MyPage() {
               color="var(--color-scan-code)" big onTopUp={wallet ? () => setTopUp('TOKEN') : undefined}
             />
           </div>
+        </Card>
+
+        {/* beta survey */}
+        <Card pad="lg" className="mt-4 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${surveyDone ? 'bg-success-soft text-success' : 'bg-brand-soft text-brand'}`}>
+              <Icon name={surveyDone ? 'check-circle' : 'edit-3'} size={18} />
+            </span>
+            <div className="flex items-center gap-2">
+              <div>
+                <p className="text-[14.5px] font-bold text-ink">베타 테스트 설문</p>
+                <p className="text-[12.5px] text-ink-muted">
+                  {surveyDone ? '참여해주셔서 감사해요.' : '1분이면 끝나요. 사용 경험을 들려주세요.'}
+                </p>
+              </div>
+              {surveyDone && <Badge tone="success" size="sm">완료</Badge>}
+            </div>
+          </div>
+          <Button size="sm" disabled={surveyDone} onClick={() => navigate('/survey')}>
+            {surveyDone ? '설문 완료' : '설문 참여하기'}
+          </Button>
         </Card>
 
         {/* quick links */}

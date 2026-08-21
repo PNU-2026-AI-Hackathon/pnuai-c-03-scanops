@@ -12,6 +12,7 @@ import ReportPage from '../pages/report/ui/ReportPage'
 import ReportsPage from '../pages/reports/ui/ReportsPage'
 import IntegrationsPage from '../pages/integrations/ui/IntegrationsPage'
 import MyPage from '../pages/mypage/ui/MyPage'
+import SurveyPage from '../pages/survey/ui/SurveyPage'
 import SettingsPage from '../pages/settings/ui/SettingsPage'
 import TeamPage from '../pages/team/ui/TeamPage'
 import PricingPage from '../pages/pricing/ui/PricingPage'
@@ -39,6 +40,7 @@ export default function AppRouter() {
       <Route path="/reports" element={<Protected><ReportsPage /></Protected>} />
       <Route path="/integrations" element={<Protected><IntegrationsPage /></Protected>} />
       <Route path="/mypage" element={<Protected><MyPage /></Protected>} />
+      <Route path="/survey" element={<Protected><SurveyPage /></Protected>} />
       <Route path="/settings" element={<Protected><SettingsPage /></Protected>} />
       <Route path="/team" element={<Protected><TeamPage /></Protected>} />
       {ENABLE_PRICING && <Route path="/checkout/:plan" element={<Protected><CheckoutPage /></Protected>} />}

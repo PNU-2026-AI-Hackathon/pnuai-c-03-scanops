@@ -9,6 +9,7 @@ import { MODE_META, type ScanMode } from '../../../shared/lib/mock'
 import { useAuth } from '../../../shared/lib/auth'
 import { initDomainVerify, confirmDomainVerify, type DomainVerifyInit } from '../../../shared/api/verify'
 import { createWebsiteScan, createRepoScan } from '../../../shared/api/scan'
+import { fetchWallet, type TokenWallet } from '../../../shared/api/tokens'
 
 const ORDER: ScanMode[] = ['WEBSITE', 'GITHUB_REPO', 'GITHUB_ACTIONS']
 const SUB: Record<ScanMode, string> = {
@@ -47,6 +48,9 @@ export default function ScanForm() {
   const [email, setEmail] = useState(user?.email ?? '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [wallet, setWallet] = useState<TokenWallet | null>(null)
+
+  useEffect(() => { fetchWallet().then(setWallet).catch(() => setWallet(null)) }, [])
 
   // 도메인 인증 상태 (WEBSITE)
   const [vstate, setVstate] = useState<VState>('idle')
@@ -219,9 +223,21 @@ export default function ScanForm() {
             <div className="mt-4 flex items-center gap-1.5 text-[13px] text-ink-muted">
               <Icon name="info" size={15} />
               {isRepo ? (
-                <span>이번 달 SAST <span className="text-brand font-semibold tnum">117,600줄</span> 남음</span>
+                <span>
+                  이번 달 SAST{' '}
+                  <span className="text-brand font-semibold tnum">
+                    {wallet ? wallet.sourceLinesLeft.toLocaleString('ko-KR') : '—'}줄
+                  </span>{' '}
+                  남음
+                </span>
               ) : (
-                <span>이번 달 DAST 스캔 <Badge tone="brand" size="sm" className="mx-0.5">2 / 5회</Badge> 남음</span>
+                <span>
+                  DAST 스캔{' '}
+                  <Badge tone="brand" size="sm" className="mx-0.5">
+                    {wallet ? `${wallet.dastAvailable}회` : '—'}
+                  </Badge>{' '}
+                  더 가능
+                </span>
               )}
             </div>
 
