@@ -5,7 +5,7 @@ type ToastTone = 'default' | 'success' | 'danger'
 interface ToastItem { id: number; message: string; tone: ToastTone }
 
 interface ToastCtx {
-  toast: (message: string, tone?: ToastTone) => void
+  toast: (message: string, tone?: ToastTone, durationMs?: number) => void
 }
 
 const Ctx = createContext<ToastCtx | null>(null)
@@ -25,10 +25,10 @@ const ICON: Record<ToastTone, IconName> = {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([])
 
-  const toast = useCallback((message: string, tone: ToastTone = 'default') => {
+  const toast = useCallback((message: string, tone: ToastTone = 'default', durationMs = 2800) => {
     const id = Date.now() + Math.random()
     setItems((arr) => [...arr, { id, message, tone }])
-    setTimeout(() => setItems((arr) => arr.filter((t) => t.id !== id)), 2800)
+    setTimeout(() => setItems((arr) => arr.filter((t) => t.id !== id)), durationMs)
   }, [])
 
   return (

@@ -139,6 +139,7 @@ export default function PricingPage() {
 }
 
 function PlanCard({ plan, current, onChoose }: { plan: DisplayPlan; current?: boolean; onChoose: (id: PlanId) => void }) {
+  const betaLocked = plan.id === 'MAX' || plan.id === 'TEAM'
   return (
     <Card pad="lg" className={`flex flex-col ${plan.popular ? 'border-2 border-brand' : ''}`}>
       <div className="flex items-center gap-2 flex-wrap">
@@ -157,10 +158,10 @@ function PlanCard({ plan, current, onChoose }: { plan: DisplayPlan; current?: bo
         variant={plan.popular ? 'primary' : 'outline'}
         block
         className="mt-5"
-        disabled={current}
+        disabled={current || betaLocked}
         onClick={() => onChoose(plan.id)}
       >
-        {current ? '사용 중' : plan.id === 'FREE' ? '무료로 시작' : plan.id === 'TEAM' ? 'Team 시작하기' : `${plan.name} 시작하기`}
+        {betaLocked ? '베타 기간 중 준비 중' : current ? '사용 중' : plan.id === 'FREE' ? '무료로 시작' : `${plan.name} 시작하기`}
       </Button>
 
       <div className="h-px bg-line my-5" />

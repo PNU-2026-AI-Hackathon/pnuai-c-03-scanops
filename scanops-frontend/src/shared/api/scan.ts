@@ -1,5 +1,4 @@
 import { http } from './httpClient'
-import { fetchScans } from '../lib/mock'
 import { enrichZap } from '../lib/zapMeta'
 import type { Report, ScanMode, ScanSummary, Severity, SeverityCounts, Vulnerability } from '../lib/mock'
 
@@ -199,13 +198,7 @@ export async function fetchRealReport(id: string): Promise<Report> {
   return { ...mapJobToSummary(job, vulns), vulnerabilities: vulns }
 }
 
-/** 실제 DAST 스캔 기록 + 목 샘플을 합쳐서 최신순 반환. 백엔드 불가 시 목만. */
-export async function fetchAllScans(): Promise<ScanSummary[]> {
-  const mock = await fetchScans()
-  try {
-    const real = (await listScanJobs()).map((j) => mapJobToSummary(j))
-    return [...real, ...mock].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
-  } catch {
-    return mock
-  }
+/** 대시보드 "최근 스캔" 등에서 쓰는 실제 스캔 기록(최신순, 최대 50건). */
+export async function fetchRecentScans(): Promise<ScanSummary[]> {
+  return (await listScanJobs()).map((j) => mapJobToSummary(j))
 }

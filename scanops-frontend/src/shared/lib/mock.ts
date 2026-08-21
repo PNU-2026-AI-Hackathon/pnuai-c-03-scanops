@@ -60,13 +60,6 @@ export interface User {
   githubLogin?: string | null
 }
 
-export interface Usage {
-  dastUsed: number; dastLimit: number
-  sastUsed: number; sastLimit: number
-  actionsUsed: number; actionsLimit: number
-  periodEnd: string
-}
-
 export interface GitHubRepo {
   id: number
   fullName: string
@@ -230,17 +223,8 @@ const REPORTS: Report[] = [
 const wait = <T>(v: T, ms = 320): Promise<T> => new Promise((r) => setTimeout(() => r(v), ms))
 
 // ── accessors ──────────────────────────────────────────────────────────────
-export const fetchScans = () => wait([...REPORTS].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)))
 export const fetchReport = (id: string) => wait(REPORTS.find((r) => r.id === id) ?? REPORTS[1])
 export const fetchScan = (id: string) => wait(REPORTS.find((r) => r.id === id) ?? REPORTS[0])
-
-export const fetchUsage = (): Promise<Usage> =>
-  wait({
-    dastUsed: 3, dastLimit: 5,
-    sastUsed: 132000, sastLimit: 100000 * 1, // intentionally near-limit for demo
-    actionsUsed: 18400, actionsLimit: 50000,
-    periodEnd: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString(),
-  })
 
 export const fetchGitHubRepos = (): Promise<GitHubRepo[]> =>
   wait([

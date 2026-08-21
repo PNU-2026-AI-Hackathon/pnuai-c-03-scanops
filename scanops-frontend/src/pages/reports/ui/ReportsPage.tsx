@@ -103,7 +103,6 @@ export default function ReportsPage() {
               { value: 'ALL', label: '전체' },
               { value: 'WEBSITE', label: 'DAST' },
               { value: 'GITHUB_REPO', label: 'SAST' },
-              { value: 'GITHUB_ACTIONS', label: 'PR' },
             ]}
           />
           <div className="relative flex-1 min-w-[180px] max-w-[280px]">

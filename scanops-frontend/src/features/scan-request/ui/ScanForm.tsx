@@ -24,6 +24,17 @@ const extractOwner = (repo: string): string | null => {
   return m ? m[1] : null
 }
 
+// 백엔드 scanops.dast.self-scan-domain 기본값과 동일 — ScanOps 자체 서비스는 소유권 인증을 생략한다.
+const SELF_SCAN_DOMAIN = (import.meta.env.VITE_SELF_SCAN_DOMAIN as string | undefined) ?? 'scanops-frontend.vercel.app'
+
+const isSelfScanDomain = (url: string): boolean => {
+  try {
+    return new URL(url).hostname.toLowerCase() === SELF_SCAN_DOMAIN.toLowerCase()
+  } catch {
+    return false
+  }
+}
+
 export default function ScanForm() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -46,10 +57,11 @@ export default function ScanForm() {
   const ghConnected = !!user?.githubLogin
 
   const validUrl = /^https?:\/\/.+\..+/.test(target)
-  // URL이 바뀌면 인증 상태 초기화
+  // URL이 바뀌면 인증 상태 초기화 — 단, ScanOps 자체 도메인은 바로 인증된 것으로 처리
   useEffect(() => {
-    setVstate(validUrl ? 'unverified' : 'idle')
     setVinfo(null)
+    if (!validUrl) return setVstate('idle')
+    setVstate(isSelfScanDomain(target) ? 'verified' : 'unverified')
   }, [target, validUrl])
 
   // GitHub 레포 소유 여부 (내 계정 소유면 인증된 것으로 간주)
@@ -105,8 +117,10 @@ export default function ScanForm() {
         const job = await createRepoScan(target, email || user?.email || 'noreply@scanops.io')
         navigate(`/scan/${job.scanId}/status`, { state: { target, mode } })
       }
-    } catch {
-      setError('스캔 요청에 실패했어요. 백엔드 연결 상태를 확인해 주세요.')
+    } catch (err) {
+      // 동시 스캔 한도 초과(429), 잔액 부족(402) 등은 백엔드가 구체적인 사유를 내려준다 —
+      // 뭉뚱그리지 않고 그대로 보여줘야 "왜 실패했는지" 사용자가 알 수 있다.
+      setError(err instanceof Error ? err.message : '스캔 요청에 실패했어요. 백엔드 연결 상태를 확인해 주세요.')
     } finally {
       setLoading(false)
     }
@@ -186,7 +200,7 @@ export default function ScanForm() {
               )
             ) : (
               <DomainVerify
-                vstate={vstate} vinfo={vinfo} validUrl={validUrl}
+                vstate={vstate} vinfo={vinfo} validUrl={validUrl} selfScan={isSelfScanDomain(target)}
                 onStart={startVerify} onCheck={checkVerify} onCopy={copy}
               />
             )}
@@ -253,11 +267,12 @@ function VerifiedBox({ text }: { text: string }) {
 }
 
 function DomainVerify({
-  vstate, vinfo, validUrl, onStart, onCheck, onCopy,
+  vstate, vinfo, validUrl, selfScan, onStart, onCheck, onCopy,
 }: {
   vstate: VState
   vinfo: DomainVerifyInit | null
   validUrl: boolean
+  selfScan: boolean
   onStart: () => void
   onCheck: () => void
   onCopy: (t: string) => void
@@ -269,7 +284,9 @@ function DomainVerify({
       </div>
     )
   }
-  if (vstate === 'verified') return <VerifiedBox text=".well-known 파일로 도메인 소유 확인됨" />
+  if (vstate === 'verified') {
+    return <VerifiedBox text={selfScan ? 'ScanOps 자체 서비스 — 소유권 인증 생략됨' : '.well-known 파일로 도메인 소유 확인됨'} />
+  }
 
   if (vstate === 'unverified') {
     return (
