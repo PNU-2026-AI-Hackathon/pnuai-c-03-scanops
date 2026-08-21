@@ -104,12 +104,18 @@ export default function ScanForm() {
     }
   }
 
-  const canScan = isRepo ? repoOwned : vstate === 'verified'
+  const noDastLeft = !isRepo && wallet != null && wallet.dastAvailable <= 0
+  const noSastLeft = isRepo && wallet != null && wallet.sourceLinesLeft <= 0
+  const canScan = (isRepo ? repoOwned : vstate === 'verified') && !noDastLeft && !noSastLeft
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    if (!canScan) return setError(isRepo ? 'GitHub 레포 소유 확인이 필요해요.' : '도메인 소유권 인증이 필요해요.')
+    if (!canScan) {
+      if (noDastLeft) return setError('이번 달 DAST 스캔 기회를 모두 사용했어요. 충전하거나 다음 달을 기다려 주세요.')
+      if (noSastLeft) return setError('SAST 사용 가능한 줄 수가 부족해요. 충전하거나 다음 달을 기다려 주세요.')
+      return setError(isRepo ? 'GitHub 레포 소유 확인이 필요해요.' : '도메인 소유권 인증이 필요해요.')
+    }
     setLoading(true)
     try {
       if (mode === 'WEBSITE') {
@@ -225,7 +231,7 @@ export default function ScanForm() {
               {isRepo ? (
                 <span>
                   이번 달 SAST{' '}
-                  <span className="text-brand font-semibold tnum">
+                  <span className={`font-semibold tnum ${noSastLeft ? 'text-danger' : 'text-brand'}`}>
                     {wallet ? wallet.sourceLinesLeft.toLocaleString('ko-KR') : '—'}줄
                   </span>{' '}
                   남음
@@ -233,13 +239,23 @@ export default function ScanForm() {
               ) : (
                 <span>
                   DAST 스캔{' '}
-                  <Badge tone="brand" size="sm" className="mx-0.5">
+                  <Badge tone={noDastLeft ? 'danger' : 'brand'} size="sm" className="mx-0.5">
                     {wallet ? `${wallet.dastAvailable}회` : '—'}
                   </Badge>{' '}
                   더 가능
                 </span>
               )}
             </div>
+
+            {(noDastLeft || noSastLeft) && (
+              <div className="mt-3 rounded-xl bg-danger-soft px-4 py-3 flex items-center justify-between gap-3">
+                <span className="flex items-center gap-2 text-[13px] text-danger">
+                  <Icon name="alert-triangle" size={16} />
+                  {noDastLeft ? '이번 달 DAST 스캔 기회를 모두 사용했어요.' : 'SAST 사용 가능한 줄 수가 부족해요.'}
+                </span>
+                <Button size="sm" variant="dark" onClick={() => navigate('/mypage')}>충전하기</Button>
+              </div>
+            )}
 
             {isRepo && (
               <div className="mt-3 rounded-xl bg-field border border-line px-4 py-3 flex items-start gap-2">
