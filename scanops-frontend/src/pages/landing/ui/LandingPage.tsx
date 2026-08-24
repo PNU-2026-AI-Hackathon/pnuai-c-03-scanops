@@ -8,48 +8,40 @@ import { ENABLE_PRICING } from '../../../shared/lib/config'
 // ── data ─────────────────────────────────────────────────────────────────────
 
 const NAV_LINKS = [
-  { label: '성능', href: '#benchmark' },
+  { label: '검증', href: '#benchmark' },
   { label: '왜 다른가', href: '#why' },
   { label: '코드 보안', href: '#security' },
   ...(ENABLE_PRICING ? [{ label: '요금제', href: '#pricing' }] : []),
 ]
 
 const stats = [
-  { value: '80.5', label: 'F1 · 신규 CVE 벤치마크 (Claude Sonnet 5 60.0)' },
-  { value: '15.7%', label: '오탐률 · Claude Sonnet 5는 79.5%' },
-  { value: '1~2분', label: '평균 분석 소요 시간' },
-  { value: '0건', label: '외부로 나가는 소스코드' },
-]
-
-// 2026-07 rebuild 모델 — CVEfixes 시간분할 test 1,197건(2023-07 이후 신규 CVE),
-// 동일 프롬프트·파서·채점으로 Claude Sonnet 5와 비교 · 재현 가능(temperature=0)
-const compare = [
-  { label: 'F1 점수', scanops: 80.5, rival: 60.0 },
-  { label: '취약점 재현율', scanops: 79.7, rival: 82.6 },
-  { label: '정밀도', scanops: 81.3, rival: 47.1 },
+  { value: '0건', label: '외부 API로 나가는 소스코드' },
+  { value: '84.7%', label: '오탐 필터 제거율 · 상용 API(83.9%) 앞섬' },
+  { value: '하이브리드', label: '그래프 데이터흐름 추적 + AI 룰 판단' },
+  { value: '3가지', label: 'DAST·SAST·PR 자동분석 한 번에' },
 ]
 
 const whyCards: { icon: IconName; title: string; desc: string }[] = [
   {
     icon: 'cpu',
-    title: '보안만 학습한 전용 모델',
-    desc: '범용 AI는 모든 걸 조금씩 압니다. ScanOps는 보안 취약점만 집중 학습해, 더 작은 모델로도 같은 코드에서 더 많이 찾아냅니다.',
+    title: '보안만 학습한 로컬 모델',
+    desc: '룰 생성·오탐 필터링·탐지까지 전부 자체 로컬 모델(Qwen3.5-9B)로 처리해요. 코드가 ChatGPT·Claude 같은 외부 API로 전송되는 일이 없습니다.',
   },
   {
-    icon: 'refresh-cw',
-    title: '최신 취약점까지 커버',
-    desc: '범용 AI는 학습한 시점까지만 압니다. ScanOps는 전 세계 취약점 정보(NVD)를 실시간으로 찾아보며 검사해, 어제 공개된 CVE도 놓치지 않아요.',
+    icon: 'layers',
+    title: '파일 하나가 아니라 레포 전체를',
+    desc: 'JS·TS 레포는 코드 속성 그래프(CPG)로 전체를 연결해 파일 간 데이터 흐름까지 추적해요. 한 파일씩만 보는 방식으로는 원리적으로 놓치는 취약점을 잡습니다.',
   },
   {
     icon: 'shield',
-    title: '오탐을 학습으로 걸러냄',
-    desc: '실제 취약 코드와 패치된 안전 코드 쌍으로 집중 학습해, 안전한 코드를 위험하다고 잘못 경고하는 오탐률(15.7%)을 상용 최상위 모델(Claude Sonnet 5 79.5%) 대비 크게 낮췄습니다.',
+    title: '오탐은 확신 있을 때만 제거',
+    desc: 'API 각각의 위험도는 손규칙 8종 + 레포별로 학습한 규칙이 판단하고, 실제 취약점 흐름 추적은 그래프 알고리즘이 맡아요. 오탐 필터는 확신 있게 안전한 코드만 제거합니다. 놓치는 것보다 잘못 알리는 게 낫다는 원칙이에요.',
   },
 ]
 
 const scanModes: { tag: string; icon: IconName; accent: string; soft: string; title: string; desc: string }[] = [
   { tag: 'DAST', icon: 'globe', accent: 'var(--color-scan-web)', soft: 'var(--color-brand-soft)', title: '웹사이트 동적 분석', desc: '실행 중인 앱을 외부에서 스캔. 코드 전송 없이 URL만으로 진단합니다.' },
-  { tag: 'SAST', icon: 'box', accent: 'var(--color-scan-code)', soft: 'var(--color-purple-soft)', title: '레포 전체 정적 분석', desc: '보안 특화 모델이 레포 소스코드를 분석해 취약 패턴을 찾습니다.' },
+  { tag: 'SAST', icon: 'box', accent: 'var(--color-scan-code)', soft: 'var(--color-purple-soft)', title: '레포 전체 정적 분석', desc: '전 언어는 AI 모델이, JS·TS 레포는 파일 간 흐름을 추적하는 그래프 분석까지 함께 적용돼요.' },
   { tag: 'Actions', icon: 'git-pull-request', accent: 'var(--color-scan-pr)', soft: 'var(--color-success-soft)', title: 'PR 자동 분석', desc: '고객 인프라 안에서 PR diff를 검사하고 결과만 전송. 코드가 밖으로 안 나갑니다.' },
 ]
 
@@ -128,7 +120,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-6 pt-20 relative z-10 sm:pt-24 pb-12 text-center flex flex-col items-center">
           <div className="mb-6 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-soft border border-line text-[12.5px] font-semibold text-ink-sub shadow-[0px_1px_3px_rgba(0,0,0,0.05)]">
             <span className="text-brand"><Icon name="shield" size={14} /></span>
-            신규 CVE 벤치마크에서 오탐률 상용 대비 5분의 1
+            소스코드는 외부 API로 전송되지 않습니다
           </div>
           <h1 className="text-[40px] sm:text-[60px] font-extrabold tracking-tight leading-[1.08]">
             당신의 코드는,
@@ -136,14 +128,14 @@ export default function LandingPage() {
             <span className="text-brand">안전한가요?</span>
           </h1>
           <p className="mt-6 max-w-2xl text-[18px] sm:text-[20px] text-ink-sub leading-relaxed break-keep [text-wrap:balance]">
-            ChatGPT·Claude 같은 범용 AI가 놓치는 취약점까지, 보안만 집중 학습한 ScanOps가 찾아냅니다.
+            ChatGPT·Claude 같은 외부 서비스에 코드를 보내지 않고, 보안 전용 로컬 모델과 그래프 분석이 직접 취약점을 찾아드려요.
           </p>
           <p className="mt-2 max-w-2xl text-[18px] sm:text-[20px] text-ink-sub leading-relaxed break-keep [text-wrap:balance]">
             URL이나 GitHub 레포만 넣으면 위험도와 고치는 방법까지, 한국어 리포트로 알려드려요.
           </p>
           <div className="mt-9 flex flex-col sm:flex-row gap-3">
             <Button size="lg" rightIcon="arrow-right" onClick={() => navigate('/signup')}>무료로 스캔 시작하기</Button>
-            <Button size="lg" variant="weak" leftIcon="bar-chart-2" onClick={() => { document.getElementById('benchmark')?.scrollIntoView({ behavior: 'smooth' }) }}>성능 비교 보기</Button>
+            <Button size="lg" variant="weak" leftIcon="bar-chart-2" onClick={() => { document.getElementById('benchmark')?.scrollIntoView({ behavior: 'smooth' }) }}>실제 검증 보기</Button>
           </div>
           <p className="mt-4 text-[13px] text-ink-muted">가입하면 웹사이트 보안검사 1회 무료 · 카드 등록 없이 시작</p>
         </div>
@@ -168,33 +160,38 @@ export default function LandingPage() {
       {/* Benchmark */}
       <section id="benchmark" className="py-[120px] px-6">
         <div className="max-w-5xl mx-auto">
-          <SectionHeading tag="성능" title="범용 AI와 대등하게 잡고, 훨씬 덜 틀립니다" sub="같은 코드를 넣어도 결과가 다릅니다. 보안에만 특화 학습된 ScanOps는 상용 최상위 모델과 대등한 재현율로, 오탐은 5분의 1 수준입니다. 우리가 만들지 않은 외부 표준 평가셋으로도 검증했어요." />
+          <SectionHeading tag="검증" title="오탐 필터링, 상용 API를 앞섰습니다" sub="코드를 외부로 보내지 않는 로컬 모델로 상용 API보다 더 정확하게 오탐을 걸러냈어요." />
           <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <div className="rounded-2xl bg-white border border-line p-7">
-              <p className="text-[15px] font-bold text-ink mb-1">신규 CVE 벤치마크 (1,197건)</p>
-              <p className="text-xs text-ink-muted mb-6">CVEfixes 시간분할 test · 2023-07 이후 공개 신규 CVE · 높을수록 좋음</p>
-              {compare.map((c) => <CompareBar key={c.label} {...c} />)}
-              <div className="mt-6 flex items-center gap-5 text-xs">
-                <Legend color="var(--color-brand)" label="ScanOps" />
-                <Legend color="var(--color-line-strong)" label="Claude Sonnet 5 (상용)" />
-              </div>
-            </div>
             <div className="rounded-2xl bg-ink p-7 flex flex-col self-start">
               <div>
-                <p className="text-sm font-bold text-white flex items-center gap-2"><Icon name="trending-down" size={16} /> 오탐은 더 적게</p>
-                <p className="text-xs text-ink-faint mt-1.5 leading-relaxed">‘안전한 코드를 위험하다고 잘못 경고’하는 오탐이 적을수록, 진짜 위험에 집중할 수 있어요.</p>
+                <p className="text-base font-bold text-white flex items-center gap-2"><Icon name="trending-down" size={18} /> 오탐 필터링, 상용 API를 앞섰어요</p>
+                <p className="text-[13px] text-ink-faint mt-2 leading-relaxed">코드를 외부로 보내는 상용 API와 달리, 로컬 모델만으로 더 높은 오탐 제거율을 냈어요.</p>
               </div>
               <div className="mt-6 grid grid-cols-2 gap-4">
-                <div className="rounded-xl bg-white/5 border border-white/10 p-5">
-                  <p className="text-[11px] text-ink-faint font-medium">ScanOps 오탐률</p>
-                  <p className="text-[34px] font-extrabold text-white mt-1 tnum leading-none">15.7<span className="text-lg">%</span></p>
+                <div className="rounded-xl bg-white/10 border border-brand/40 p-5">
+                  <p className="text-[13px] text-brand-soft font-semibold">ScanOps(로컬) 오탐 제거율</p>
+                  <p className="text-[36px] font-extrabold text-white mt-1.5 tnum leading-none">84.7<span className="text-lg">%</span></p>
                 </div>
                 <div className="rounded-xl bg-white/5 border border-white/10 p-5">
-                  <p className="text-[11px] text-ink-faint font-medium">Claude Sonnet 5 오탐률</p>
-                  <p className="text-[34px] font-extrabold text-ink-faint mt-1 tnum leading-none">79.5<span className="text-lg">%</span></p>
+                  <p className="text-[13px] text-ink-faint font-semibold">상용 API(Claude) 오탐 제거율</p>
+                  <p className="text-[36px] font-extrabold text-ink-faint mt-1.5 tnum leading-none">83.9<span className="text-lg">%</span></p>
                 </div>
               </div>
-              <p className="mt-6 text-[12px] text-ink-faint leading-relaxed">* CVEfixes 시간분할 test 1,197건(2023-07 이후 신규 CVE) · 동일 프롬프트·채점 · 재현 가능(temperature=0).</p>
+              <p className="mt-6 text-[12.5px] text-ink-faint leading-relaxed">* jquery-ui 레포 기준 오탐 필터링 성능 비교(탐지력 지표 아님).</p>
+            </div>
+            <div className="rounded-2xl bg-white border border-line p-7 flex flex-col">
+              <p className="text-base font-bold text-ink mb-1">완전한 로컬 처리</p>
+              <p className="text-[13px] text-ink-muted mb-5 leading-relaxed">룰 생성부터 오탐 필터링, 탐지까지 전 단계를 자체 로컬 모델(Qwen3.5-9B)로 처리해요.</p>
+              <div className="flex flex-col gap-3">
+                {['룰 생성', '오탐 필터링', '취약점 탐지'].map((step) => (
+                  <div key={step} className="flex items-center gap-3 rounded-xl bg-surface border border-line px-4 py-3">
+                    <span className="text-success shrink-0"><Icon name="check-circle" size={18} /></span>
+                    <span className="text-[14px] font-semibold text-ink">{step}</span>
+                    <span className="ml-auto text-[12px] font-semibold text-ink-muted">로컬 모델</span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-5 pt-5 border-t border-line text-[13px] text-ink-sub leading-relaxed font-medium">ChatGPT·Claude 같은 외부 API로 코드가 전송되는 구간이 아예 없습니다.</p>
             </div>
           </div>
         </div>
@@ -345,33 +342,6 @@ function SectionHeading({ tag, title, sub }: { tag: string; title: string; sub: 
   )
 }
 
-function CompareBar({ label, scanops, rival }: { label: string; scanops: number; rival: number }) {
-  return (
-    <div className="mb-5 last:mb-0">
-      <p className="text-[13px] font-medium text-ink-sub mb-2">{label}</p>
-      <div className="flex items-center gap-2.5 mb-1.5">
-        <div className="flex-1 h-2.5 rounded-full bg-field overflow-hidden">
-          <div className="h-full rounded-full bg-brand" style={{ width: `${scanops}%` }} />
-        </div>
-        <span className="w-12 text-right text-[13px] font-bold text-brand tnum">{scanops}</span>
-      </div>
-      <div className="flex items-center gap-2.5">
-        <div className="flex-1 h-2.5 rounded-full bg-field overflow-hidden">
-          <div className="h-full rounded-full bg-line-strong" style={{ width: `${rival}%` }} />
-        </div>
-        <span className="w-12 text-right text-[13px] font-semibold text-ink-muted tnum">{rival}</span>
-      </div>
-    </div>
-  )
-}
-
-function Legend({ color, label }: { color: string; label: string }) {
-  return (
-    <span className="flex items-center gap-1.5 text-ink-muted">
-      <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />{label}
-    </span>
-  )
-}
 
 function FlowCard({ badge, color, soft, title, steps, note }: { badge: string; color: string; soft: string; title: string; steps: string[]; note: string }) {
   return (
@@ -397,8 +367,8 @@ function ReportPreview() {
   const summary = [
     { label: '취약점', value: '7건', color: 'var(--color-ink)' },
     { label: '최고 CVSS', value: '9.8', color: 'var(--color-sev-critical)' },
-    { label: '오탐률', value: '12.7%', color: 'var(--color-success)' },
-    { label: '분석 시간', value: '3분', color: 'var(--color-brand)' },
+    { label: 'Critical', value: '1건', color: 'var(--color-sev-critical)' },
+    { label: 'High', value: '1건', color: 'var(--color-sev-high)' },
   ]
   const vulns: { sev: string; color: string; bg: string; cvss: string; name: string; loc: string }[] = [
     { sev: 'Critical', color: 'var(--color-sev-critical)', bg: '#fde7e9', cvss: '9.8', name: 'SQL Injection', loc: 'POST /api/login → username' },
@@ -433,7 +403,7 @@ function ReportPreview() {
 
         <div className="mt-3 flex items-center gap-2 rounded-lg bg-brand-soft px-3 py-2.5">
           <span className="text-brand"><Icon name="shield" size={15} /></span>
-          <span className="text-[12.5px] text-brand font-medium">신규 CVE 벤치마크에서 검증된 정확도 · 도메인 특화 학습으로 오탐 억제</span>
+          <span className="text-[12.5px] text-brand font-medium">소스코드는 서버에 저장되지 않고, 결과만 남습니다</span>
         </div>
 
         <div className="mt-3 flex flex-col gap-2">

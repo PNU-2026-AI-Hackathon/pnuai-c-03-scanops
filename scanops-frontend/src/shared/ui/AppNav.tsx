@@ -6,14 +6,15 @@ import Avatar from './Avatar'
 import { useAuth } from '../lib/auth'
 import { planById } from '../lib/mock'
 import { ENABLE_PRICING } from '../lib/config'
+import { useTour } from '../lib/tour'
 
-interface NavItem { label: string; path: string; icon: IconName; match: (p: string) => boolean }
+interface NavItem { label: string; path: string; icon: IconName; match: (p: string) => boolean; tourId?: string }
 
 const ITEMS: NavItem[] = [
   { label: '대시보드', path: '/dashboard', icon: 'home', match: (p) => p.startsWith('/dashboard') },
   { label: '스캔', path: '/scan', icon: 'target', match: (p) => p === '/scan' || /^\/scan\//.test(p) },
   { label: '스캔 기록', path: '/reports', icon: 'file-text', match: (p) => p.startsWith('/reports') || p.startsWith('/report/') },
-  { label: '연동', path: '/integrations', icon: 'github', match: (p) => p.startsWith('/integrations') },
+  { label: '연동', path: '/integrations', icon: 'github', match: (p) => p.startsWith('/integrations'), tourId: 'nav-integrations' },
   ...(ENABLE_PRICING ? [{ label: '요금제', path: '/pricing', icon: 'credit-card' as IconName, match: (p: string) => p.startsWith('/pricing') }] : []),
 ]
 
@@ -22,6 +23,7 @@ export default function AppNav() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const { user, logout } = useAuth()
+  const { restart } = useTour()
   const [menu, setMenu] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const plan = user ? planById(user.plan) : null
@@ -44,6 +46,7 @@ export default function AppNav() {
             return (
               <button
                 key={it.path}
+                data-tour={it.tourId}
                 onClick={() => navigate(it.path)}
                 className={`flex items-center gap-1.5 px-3 h-9 rounded-lg text-[13.5px] transition-colors ${
                   active ? 'text-ink font-semibold bg-field' : 'text-ink-muted font-medium hover:text-ink-sub hover:bg-surface'
@@ -74,7 +77,7 @@ export default function AppNav() {
         )}
 
         <div className="relative" ref={ref}>
-          <button onClick={() => setMenu((m) => !m)} className="flex items-center" aria-label="계정 메뉴">
+          <button data-tour="nav-avatar" onClick={() => setMenu((m) => !m)} className="flex items-center" aria-label="계정 메뉴">
             <Avatar name={user?.name} size={32} />
           </button>
           {menu && (
@@ -89,6 +92,7 @@ export default function AppNav() {
                 <MenuItem icon="credit-card" label="요금제·결제" onClick={() => { setMenu(false); navigate('/pricing') }} />
               )}
               <div className="h-px bg-line" />
+              <MenuItem icon="compass" label="가이드 다시보기" onClick={() => { setMenu(false); restart() }} />
               <MenuItem icon="log-out" label="로그아웃" danger onClick={() => { setMenu(false); logout(); navigate('/') }} />
             </div>
           )}
