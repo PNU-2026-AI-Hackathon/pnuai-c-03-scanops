@@ -15,7 +15,7 @@ const ITEMS: NavItem[] = [
   { label: '스캔', path: '/scan', icon: 'target', match: (p) => p === '/scan' || /^\/scan\//.test(p) },
   { label: '스캔 기록', path: '/reports', icon: 'file-text', match: (p) => p.startsWith('/reports') || p.startsWith('/report/') },
   { label: '연동', path: '/integrations', icon: 'github', match: (p) => p.startsWith('/integrations'), tourId: 'nav-integrations' },
-  ...(ENABLE_PRICING ? [{ label: '요금제', path: '/pricing', icon: 'credit-card' as IconName, match: (p: string) => p.startsWith('/pricing') }] : []),
+  ...(ENABLE_PRICING ? [{ label: '요금제', path: '/pricing', icon: 'credit-card' as IconName, match: (p: string) => p.startsWith('/pricing'), tourId: 'nav-pricing' }] : []),
 ]
 
 /** Shared top navigation for authenticated app screens (V3 light theme). */

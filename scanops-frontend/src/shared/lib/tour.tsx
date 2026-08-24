@@ -49,6 +49,13 @@ export const TOUR_STEPS: TourStep[] = [
     placement: 'bottom',
   },
   {
+    id: 'pricing',
+    selector: '[data-tour="nav-pricing"]',
+    title: 'Pro, 지금 무료로 써보세요',
+    desc: '베타 기간에는 Pro 요금제를 무료로 체험할 수 있어요. 요금제에서 Pro를 선택해 "결제하기"를 눌러도 실제로 청구되지 않으니 편하게 눌러보세요.',
+    placement: 'bottom',
+  },
+  {
     id: 'account',
     selector: '[data-tour="nav-avatar"]',
     title: '마이페이지',
