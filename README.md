@@ -1,6 +1,7 @@
 # ScanOps — 보안 특화 AI 취약점 진단 SaaS
 > 부산대학교 2026 AI 해커톤 · 창업트랙(C) 3조 · 팀 **ScanOps**
-![데모 화면](https://github.com/PNU-2026-AI-Hackathon/pnuai-c-03-scanops/thumbnail)
+
+[![썸네일](https://raw.githubusercontent.com/PNU-2026-AI-Hackathon/pnuai-c-03-scanops/main/thumbnail.png)](https://github.com/PNU-2026-AI-Hackathon/pnuai-c-03-scanops)
 [![GitHub App](https://img.shields.io/badge/GitHub%20App-설치하기-238636?logo=github)](https://github.com/apps/scanops-security-scanner)
 
 웹 URL 또는 GitHub 코드를 입력하면, **자체 파인튜닝한 보안 특화 LLM(Qwen3.5-9B)과 Joern 코드그래프(CPG) 하이브리드 엔진**이 보안 취약점을 자동으로 찾아 CVE·CWE·CVSS 근거와 한국어 수정 가이드를 제공하는 **개발자 친화 보안 진단 SaaS**입니다. 미학습 신규 CVE 1,197건 교차검증 기준 **AUC 0.91, 정밀도 81.3%**를 달성했으며, 이는 상용 최상위 모델인 Claude Sonnet 5(정밀도 47.1%) 대비 오탐률을 5분의 1 수준(15.7% vs 79.5%)으로 낮춘 결과입니다.
