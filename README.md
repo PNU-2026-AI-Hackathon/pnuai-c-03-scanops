@@ -1,4 +1,4 @@
-# ScanOps — 보안 특화 AI 취약점 진단 SaaS
+# 보안 특화 AI 취약점 진단 SaaS, ScanOps 
 > 부산대학교 2026 AI 해커톤 · 창업트랙(C) 3조 · 팀 **ScanOps**
 
 [![썸네일](https://raw.githubusercontent.com/PNU-2026-AI-Hackathon/pnuai-c-03-scanops/main/thumbnail.png)](https://github.com/PNU-2026-AI-Hackathon/pnuai-c-03-scanops)
