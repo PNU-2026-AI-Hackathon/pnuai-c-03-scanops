@@ -1,20 +1,23 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import Logo from '../../../shared/ui/Logo'
 import Input from '../../../shared/ui/Input'
 import Button from '../../../shared/ui/Button'
 import Checkbox from '../../../shared/ui/Checkbox'
 import Icon from '../../../shared/ui/Icon'
+import LanguageSwitcher from '../../../shared/ui/LanguageSwitcher'
 import { useAuth } from '../../../shared/lib/auth'
 import { GITHUB_AUTHORIZE_URL } from '../../../shared/lib/config'
 
 const TERMS = [
-  { key: 'tos', label: '[필수] 이용약관 동의', required: true },
-  { key: 'privacy', label: '[필수] 개인정보 수집·이용 동의', required: true },
-  { key: 'marketing', label: '[선택] 마케팅 정보 수신 동의', required: false },
+  { key: 'tos', labelKey: 'signup.terms.tos', required: true },
+  { key: 'privacy', labelKey: 'signup.terms.privacy', required: true },
+  { key: 'marketing', labelKey: 'signup.terms.marketing', required: false },
 ] as const
 
 export default function SignupPage() {
+  const { t } = useTranslation('auth')
   const navigate = useNavigate()
   const { signup } = useAuth()
   const [email, setEmail] = useState('')
@@ -35,15 +38,15 @@ export default function SignupPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    if (pw.length < 8) return setError('비밀번호는 8자 이상이어야 해요.')
-    if (pw !== pw2) return setError('비밀번호가 일치하지 않아요.')
-    if (!requiredOk) return setError('필수 약관에 동의해 주세요.')
+    if (pw.length < 8) return setError(t('signup.errors.passwordTooShort'))
+    if (pw !== pw2) return setError(t('signup.errors.passwordMismatch'))
+    if (!requiredOk) return setError(t('signup.errors.termsRequired'))
     setLoading(true)
     try {
       await signup(email, pw)
       navigate('/onboarding', { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : '가입에 실패했어요. 잠시 후 다시 시도해 주세요.')
+      setError(err instanceof Error ? err.message : t('signup.errors.signupFailed'))
     } finally {
       setLoading(false)
     }
@@ -51,14 +54,15 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <header className="h-18 flex items-center px-6 sm:px-10 py-5">
+      <header className="h-18 flex items-center justify-between px-6 sm:px-10 py-5">
         <Logo onClick={() => navigate('/')} />
+        <LanguageSwitcher />
       </header>
 
       <main className="flex-1 flex items-start justify-center px-6 pb-16">
         <div className="w-full max-w-[400px] mt-8 sm:mt-10 flex flex-col items-center fade-up">
-          <h1 className="text-[26px] font-bold text-ink tracking-tight">ScanOps 시작하기</h1>
-          <p className="mt-1.5 text-[15px] text-ink-muted">30초면 가입이 끝나요</p>
+          <h1 className="text-[26px] font-bold text-ink tracking-tight">{t('signup.title')}</h1>
+          <p className="mt-1.5 text-[15px] text-ink-muted">{t('signup.subtitle')}</p>
 
           <Button
             variant="github"
@@ -68,25 +72,25 @@ export default function SignupPage() {
             className="mt-7"
             onClick={() => { window.location.href = GITHUB_AUTHORIZE_URL }}
           >
-            GitHub로 시작하기
+            {t('signup.githubStart')}
           </Button>
 
           <div className="w-full flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-line" />
-            <span className="text-[13px] text-ink-muted">또는</span>
+            <span className="text-[13px] text-ink-muted">{t('signup.or')}</span>
             <div className="flex-1 h-px bg-line" />
           </div>
 
           <form className="w-full flex flex-col gap-4" onSubmit={onSubmit}>
-            <Input label="이메일" type="email" leftIcon="mail" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <Input label="비밀번호" reveal leftIcon="lock" placeholder="8자 이상 입력" value={pw} onChange={(e) => setPw(e.target.value)} />
-            <Input label="비밀번호 확인" reveal leftIcon="lock" placeholder="비밀번호를 다시 입력" value={pw2} onChange={(e) => setPw2(e.target.value)} />
+            <Input label={t('signup.emailLabel')} type="email" leftIcon="mail" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input label={t('signup.passwordLabel')} reveal leftIcon="lock" placeholder={t('signup.passwordPlaceholder')} value={pw} onChange={(e) => setPw(e.target.value)} />
+            <Input label={t('signup.passwordConfirmLabel')} reveal leftIcon="lock" placeholder={t('signup.passwordConfirmPlaceholder')} value={pw2} onChange={(e) => setPw2(e.target.value)} />
 
             <div className="rounded-xl bg-surface border border-line px-4 py-3.5 flex flex-col gap-3">
-              <Checkbox label="전체 동의하기" checked={allChecked} onChange={toggleAll} bold />
+              <Checkbox label={t('signup.terms.agreeAll')} checked={allChecked} onChange={toggleAll} bold />
               <div className="h-px bg-line" />
-              {TERMS.map((t) => (
-                <Checkbox key={t.key} label={t.label} checked={!!checked[t.key]} onChange={() => toggle(t.key)} />
+              {TERMS.map((term) => (
+                <Checkbox key={term.key} label={t(term.labelKey)} checked={!!checked[term.key]} onChange={() => toggle(term.key)} />
               ))}
             </div>
 
@@ -96,12 +100,12 @@ export default function SignupPage() {
               </div>
             )}
 
-            <Button type="submit" size="lg" block loading={loading}>가입하기</Button>
+            <Button type="submit" size="lg" block loading={loading}>{t('signup.submit')}</Button>
           </form>
 
           <p className="mt-5 text-sm text-ink-muted">
-            이미 계정이 있으신가요?{' '}
-            <button onClick={() => navigate('/login')} className="text-brand font-semibold hover:underline">로그인</button>
+            {t('signup.haveAccount')}{' '}
+            <button onClick={() => navigate('/login')} className="text-brand font-semibold hover:underline">{t('signup.loginLink')}</button>
           </p>
         </div>
       </main>

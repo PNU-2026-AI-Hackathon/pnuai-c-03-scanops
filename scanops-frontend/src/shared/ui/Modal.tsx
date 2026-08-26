@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import Icon from './Icon'
 
 interface ModalProps {
@@ -12,6 +13,7 @@ interface ModalProps {
 }
 
 export default function Modal({ open, onClose, title, children, width = 440, footer }: ModalProps) {
+  const { t } = useTranslation('common')
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -38,7 +40,7 @@ export default function Modal({ open, onClose, title, children, width = 440, foo
         {title && (
           <div className="flex items-center justify-between px-6 pt-5 pb-1">
             <h3 className="text-[18px] font-bold text-ink">{title}</h3>
-            <button onClick={onClose} className="text-ink-faint hover:text-ink-sub" aria-label="닫기">
+            <button onClick={onClose} className="text-ink-faint hover:text-ink-sub" aria-label={t('modal.close')}>
               <Icon name="x" size={20} />
             </button>
           </div>

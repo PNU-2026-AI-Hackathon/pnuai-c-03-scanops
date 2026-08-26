@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import AppNav from '../../../shared/ui/AppNav'
 import Card from '../../../shared/ui/Card'
 import Badge from '../../../shared/ui/Badge'
@@ -14,14 +15,15 @@ import { fetchScansPage, deleteScan, type ScanPage } from '../../../shared/api/s
 type Filter = 'ALL' | ScanMode
 const PAGE_SIZE = 10
 
-const STATUS: Record<ScanStatus, { label: string; tone: 'success' | 'brand' | 'warning' | 'danger' }> = {
-  DONE: { label: '완료', tone: 'success' },
-  RUNNING: { label: '진행 중', tone: 'brand' },
-  PENDING: { label: '대기 중', tone: 'warning' },
-  FAILED: { label: '실패', tone: 'danger' },
+const STATUS: Record<ScanStatus, { key: string; tone: 'success' | 'brand' | 'warning' | 'danger' }> = {
+  DONE: { key: 'done', tone: 'success' },
+  RUNNING: { key: 'running', tone: 'brand' },
+  PENDING: { key: 'pending', tone: 'warning' },
+  FAILED: { key: 'failed', tone: 'danger' },
 }
 
 export default function ReportsPage() {
+  const { t } = useTranslation('reports')
   const navigate = useNavigate()
   const { toast } = useToast()
 
@@ -53,7 +55,7 @@ export default function ReportsPage() {
       const res = await fetchScansPage({ page, size: PAGE_SIZE, mode: filter, q: debouncedQ })
       setData(res)
     } catch {
-      setError('스캔 기록을 불러오지 못했어요. 백엔드 연결 상태를 확인해 주세요.')
+      setError(t('list.loadError'))
       setData(null)
     } finally {
       setLoading(false)
@@ -67,13 +69,13 @@ export default function ReportsPage() {
     setDeleting(true)
     try {
       await deleteScan(target.id)
-      toast('스캔 기록을 삭제했어요', 'success')
+      toast(t('toast.deleteSuccess'), 'success')
       setTarget(null)
       // 마지막 항목을 지워 페이지가 비고, 첫 페이지가 아니면 한 칸 뒤로
       if (data && data.items.length === 1 && page > 0) setPage((p) => p - 1)
       else load()
     } catch {
-      toast('삭제에 실패했어요. 잠시 후 다시 시도해 주세요.', 'danger')
+      toast(t('toast.deleteFail'), 'danger')
     } finally {
       setDeleting(false)
     }
@@ -89,10 +91,10 @@ export default function ReportsPage() {
       <main className="max-w-[920px] mx-auto px-6 py-8 fade-up">
         <div className="flex items-start justify-between gap-4 mb-5">
           <div>
-            <h1 className="text-[26px] font-bold text-ink tracking-tight">스캔 기록</h1>
-            <p className="mt-1 text-sm text-ink-muted">완료된 스캔을 클릭하면 보고서를 볼 수 있어요 · 결과는 1개월간 보관됩니다</p>
+            <h1 className="text-[26px] font-bold text-ink tracking-tight">{t('page.title')}</h1>
+            <p className="mt-1 text-sm text-ink-muted">{t('page.subtitle')}</p>
           </div>
-          <Button variant="outline" size="sm" leftIcon="plus" onClick={() => navigate('/scan')}>새 스캔</Button>
+          <Button variant="outline" size="sm" leftIcon="plus" onClick={() => navigate('/scan')}>{t('page.newScan')}</Button>
         </div>
 
         <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
@@ -100,14 +102,14 @@ export default function ReportsPage() {
             value={filter}
             onChange={setFilter}
             options={[
-              { value: 'ALL', label: '전체' },
+              { value: 'ALL', label: t('filter.all') },
               { value: 'WEBSITE', label: 'DAST' },
               { value: 'GITHUB_REPO', label: 'SAST' },
             ]}
           />
           <div className="relative flex-1 min-w-[180px] max-w-[280px]">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint"><Icon name="search" size={17} /></span>
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="대상 검색"
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('search.placeholder')}
               className="w-full h-10 rounded-xl bg-white border border-line pl-10 pr-3 text-[14px] text-ink placeholder:text-ink-faint outline-none focus:border-brand transition-colors" />
           </div>
         </div>
@@ -118,13 +120,13 @@ export default function ReportsPage() {
           <Card pad="lg" className="text-center py-16">
             <span className="inline-flex w-14 h-14 rounded-2xl bg-danger-soft text-danger items-center justify-center mb-3"><Icon name="alert-triangle" size={26} /></span>
             <p className="text-sm text-ink-muted">{error}</p>
-            <button onClick={load} className="mt-3 text-brand text-sm font-semibold hover:underline">다시 시도</button>
+            <button onClick={load} className="mt-3 text-brand text-sm font-semibold hover:underline">{t('list.retry')}</button>
           </Card>
         ) : items.length === 0 ? (
           <Card pad="lg" className="text-center py-16">
             <span className="inline-flex w-14 h-14 rounded-2xl bg-field text-ink-muted items-center justify-center mb-3"><Icon name="search" size={26} /></span>
-            <p className="text-sm text-ink-muted">{debouncedQ || filter !== 'ALL' ? '조건에 맞는 스캔이 없어요.' : '아직 스캔 기록이 없어요.'}</p>
-            <button onClick={() => navigate('/scan')} className="mt-3 text-brand text-sm font-semibold hover:underline">첫 번째 스캔을 시작해보세요 →</button>
+            <p className="text-sm text-ink-muted">{debouncedQ || filter !== 'ALL' ? t('list.emptyFiltered') : t('list.emptyAll')}</p>
+            <button onClick={() => navigate('/scan')} className="mt-3 text-brand text-sm font-semibold hover:underline">{t('list.startFirst')}</button>
           </Card>
         ) : (
           <>
@@ -151,8 +153,8 @@ export default function ReportsPage() {
                       </div>
                       <p className="text-[12.5px] text-ink-muted">
                         {formatDateTime(s.createdAt)}
-                        {s.status === 'DONE' && s.total > 0 && ` · 취약점 ${s.total}건`}
-                        {s.loc ? ` · ${s.loc.toLocaleString('ko-KR')}줄` : ''}
+                        {s.status === 'DONE' && s.total > 0 && ` ${t('list.item.vulnCount', { count: s.total })}`}
+                        {s.loc ? ` ${t('list.item.lines', { count: s.loc.toLocaleString('ko-KR') })}` : ''}
                       </p>
                     </div>
                     {s.status === 'DONE' && s.maxCvss > 0 && (
@@ -160,13 +162,13 @@ export default function ReportsPage() {
                         CVSS {s.maxCvss.toFixed(1)}
                       </Badge>
                     )}
-                    <Badge tone={st.tone} size="sm">{st.label}</Badge>
+                    <Badge tone={st.tone} size="sm">{t(`status.${st.key}`)}</Badge>
                     {clickable && <Icon name="chevron-right" size={16} className="text-ink-faint" />}
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setTarget(s) }}
                       className="w-8 h-8 -mr-1 rounded-lg flex items-center justify-center text-ink-faint hover:text-danger hover:bg-danger-soft transition-colors shrink-0"
-                      aria-label="스캔 기록 삭제"
+                      aria-label={t('list.item.deleteAriaLabel')}
                     >
                       <Icon name="trash-2" size={16} />
                     </button>
@@ -178,19 +180,19 @@ export default function ReportsPage() {
             {/* 페이지네이션 */}
             <div className="flex items-center justify-between gap-3 mt-5">
               <p className="text-[12.5px] text-ink-muted">
-                전체 <span className="text-ink-sub font-semibold tnum">{total.toLocaleString('ko-KR')}</span>건
+                {t('pagination.totalLabel')} <span className="text-ink-sub font-semibold tnum">{total.toLocaleString('ko-KR')}</span>{t('pagination.totalSuffix')}
               </p>
               <div className="flex items-center gap-1.5">
                 <Button variant="outline" size="sm" leftIcon="chevron-left"
                   disabled={data?.first ?? true} onClick={() => setPage((p) => Math.max(0, p - 1))}>
-                  이전
+                  {t('pagination.prev')}
                 </Button>
                 <span className="px-2 text-[13px] text-ink-sub tabular-nums">
                   {totalPages === 0 ? 0 : page + 1} / {totalPages}
                 </span>
                 <Button variant="outline" size="sm" rightIcon="chevron-right"
                   disabled={data?.last ?? true} onClick={() => setPage((p) => p + 1)}>
-                  다음
+                  {t('pagination.next')}
                 </Button>
               </div>
             </div>
@@ -202,18 +204,17 @@ export default function ReportsPage() {
       <Modal
         open={!!target}
         onClose={() => !deleting && setTarget(null)}
-        title="스캔 기록 삭제"
+        title={t('deleteModal.title')}
         width={420}
         footer={
           <>
-            <Button variant="outline" block onClick={() => setTarget(null)} disabled={deleting}>취소</Button>
-            <Button variant="danger" block loading={deleting} onClick={confirmDelete}>삭제</Button>
+            <Button variant="outline" block onClick={() => setTarget(null)} disabled={deleting}>{t('deleteModal.cancel')}</Button>
+            <Button variant="danger" block loading={deleting} onClick={confirmDelete}>{t('deleteModal.confirm')}</Button>
           </>
         }
       >
         <p className="text-[14px] text-ink-sub leading-relaxed">
-          <span className="font-semibold text-ink break-all">{target?.target}</span> 의 스캔 기록과
-          발견된 취약점이 모두 삭제돼요. 이 작업은 되돌릴 수 없어요.
+          <span className="font-semibold text-ink break-all">{target?.target}</span> {t('deleteModal.body')}
         </p>
       </Modal>
     </div>

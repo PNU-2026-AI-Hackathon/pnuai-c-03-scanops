@@ -257,18 +257,26 @@ export const MODE_META: Record<ScanMode, { tag: string; label: string; color: st
   GITHUB_ACTIONS: { tag: 'Actions', label: 'PR 분석', color: 'var(--color-scan-pr)', soft: 'var(--color-success-soft)', icon: 'git-pull-request' },
 }
 
+import i18n from './i18n'
+
 export function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString('ko-KR', {
+  const locale = i18n.language === 'en' ? 'en-US' : 'ko-KR'
+  return new Date(iso).toLocaleString(locale, {
     month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
   })
 }
 export function relativeTime(iso: string) {
   const diff = Date.now() - +new Date(iso)
   const h = Math.floor(diff / 3600000)
+  if (i18n.language === 'en') {
+    if (h < 1) return 'just now'
+    if (h < 24) return `${h}h ago`
+    return `${Math.floor(h / 24)}d ago`
+  }
   if (h < 1) return '방금 전'
   if (h < 24) return `${h}시간 전`
   return `${Math.floor(h / 24)}일 전`
 }
 export function won(n: number) {
-  return '₩' + n.toLocaleString('ko-KR')
+  return '₩' + n.toLocaleString(i18n.language === 'en' ? 'en-US' : 'ko-KR')
 }

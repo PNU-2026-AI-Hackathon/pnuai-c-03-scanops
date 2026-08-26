@@ -1,25 +1,28 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import Logo from './Logo'
 import Icon, { type IconName } from './Icon'
 import Avatar from './Avatar'
+import LanguageSwitcher from './LanguageSwitcher'
 import { useAuth } from '../lib/auth'
 import { planById } from '../lib/mock'
 import { ENABLE_PRICING } from '../lib/config'
 import { useTour } from '../lib/tour'
 
-interface NavItem { label: string; path: string; icon: IconName; match: (p: string) => boolean; tourId?: string }
+interface NavItem { key: string; path: string; icon: IconName; match: (p: string) => boolean; tourId?: string }
 
 const ITEMS: NavItem[] = [
-  { label: '대시보드', path: '/dashboard', icon: 'home', match: (p) => p.startsWith('/dashboard') },
-  { label: '스캔', path: '/scan', icon: 'target', match: (p) => p === '/scan' || /^\/scan\//.test(p) },
-  { label: '스캔 기록', path: '/reports', icon: 'file-text', match: (p) => p.startsWith('/reports') || p.startsWith('/report/') },
-  { label: '연동', path: '/integrations', icon: 'github', match: (p) => p.startsWith('/integrations'), tourId: 'nav-integrations' },
-  ...(ENABLE_PRICING ? [{ label: '요금제', path: '/pricing', icon: 'credit-card' as IconName, match: (p: string) => p.startsWith('/pricing'), tourId: 'nav-pricing' }] : []),
+  { key: 'dashboard', path: '/dashboard', icon: 'home', match: (p) => p.startsWith('/dashboard') },
+  { key: 'scan', path: '/scan', icon: 'target', match: (p) => p === '/scan' || /^\/scan\//.test(p) },
+  { key: 'scanHistory', path: '/reports', icon: 'file-text', match: (p) => p.startsWith('/reports') || p.startsWith('/report/') },
+  { key: 'integrations', path: '/integrations', icon: 'github', match: (p) => p.startsWith('/integrations'), tourId: 'nav-integrations' },
+  ...(ENABLE_PRICING ? [{ key: 'pricing', path: '/pricing', icon: 'credit-card' as IconName, match: (p: string) => p.startsWith('/pricing'), tourId: 'nav-pricing' }] : []),
 ]
 
 /** Shared top navigation for authenticated app screens (V3 light theme). */
 export default function AppNav() {
+  const { t } = useTranslation('common')
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const { user, logout } = useAuth()
@@ -53,7 +56,7 @@ export default function AppNav() {
                 }`}
               >
                 <Icon name={it.icon} size={16} />
-                {it.label}
+                {t(`nav.${it.key}`)}
               </button>
             )
           })}
@@ -61,11 +64,12 @@ export default function AppNav() {
       </div>
 
       <div className="flex items-center gap-2.5">
+        <LanguageSwitcher />
         <button
           onClick={() => navigate('/scan')}
           className="hidden sm:inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-brand text-white text-[13px] font-semibold hover:bg-brand-hover transition-colors"
         >
-          <Icon name="plus" size={15} /> 새 스캔
+          <Icon name="plus" size={15} /> {t('newScan')}
         </button>
         {ENABLE_PRICING && plan && (
           <button
@@ -77,7 +81,7 @@ export default function AppNav() {
         )}
 
         <div className="relative" ref={ref}>
-          <button data-tour="nav-avatar" onClick={() => setMenu((m) => !m)} className="flex items-center" aria-label="계정 메뉴">
+          <button data-tour="nav-avatar" onClick={() => setMenu((m) => !m)} className="flex items-center" aria-label={t('accountMenu')}>
             <Avatar name={user?.name} size={32} />
           </button>
           {menu && (
@@ -86,14 +90,14 @@ export default function AppNav() {
                 <p className="text-sm font-semibold text-ink truncate">{user?.name}</p>
                 <p className="text-[12px] text-ink-muted truncate">{user?.email}</p>
               </div>
-              <MenuItem icon="user" label="마이페이지" onClick={() => { setMenu(false); navigate('/mypage') }} />
-              <MenuItem icon="settings" label="설정" onClick={() => { setMenu(false); navigate('/settings') }} />
+              <MenuItem icon="user" label={t('menu.mypage')} onClick={() => { setMenu(false); navigate('/mypage') }} />
+              <MenuItem icon="settings" label={t('menu.settings')} onClick={() => { setMenu(false); navigate('/settings') }} />
               {ENABLE_PRICING && (
-                <MenuItem icon="credit-card" label="요금제·결제" onClick={() => { setMenu(false); navigate('/pricing') }} />
+                <MenuItem icon="credit-card" label={t('menu.billing')} onClick={() => { setMenu(false); navigate('/pricing') }} />
               )}
               <div className="h-px bg-line" />
-              <MenuItem icon="compass" label="가이드 다시보기" onClick={() => { setMenu(false); restart() }} />
-              <MenuItem icon="log-out" label="로그아웃" danger onClick={() => { setMenu(false); logout(); navigate('/') }} />
+              <MenuItem icon="compass" label={t('menu.restartTour')} onClick={() => { setMenu(false); restart() }} />
+              <MenuItem icon="log-out" label={t('menu.logout')} danger onClick={() => { setMenu(false); logout(); navigate('/') }} />
             </div>
           )}
         </div>

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { PlanId, User } from './mock'
+import i18n from './i18n'
 
 /**
  * Authentication/session.
@@ -25,7 +26,7 @@ async function emailAuth(path: string, body: { email: string; password: string }
     body: JSON.stringify(body),
   })
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data?.error ?? '요청에 실패했어요.')
+  if (!res.ok) throw new Error(data?.error ?? i18n.t('auth.genericError', { ns: 'common' }))
   return data.token as string
 }
 

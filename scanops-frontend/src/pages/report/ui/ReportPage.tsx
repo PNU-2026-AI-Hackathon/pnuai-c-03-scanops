@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import AppNav from '../../../shared/ui/AppNav'
 import Card from '../../../shared/ui/Card'
 import Button from '../../../shared/ui/Button'
@@ -10,6 +12,7 @@ import {
   fetchReport, MODE_META, SEVERITY_META, formatDateTime,
   type Report, type Vulnerability, type Severity, type SeverityCounts,
 } from '../../../shared/lib/mock'
+import { useModeLabel } from '../../../shared/lib/planText'
 import { isRealId, fetchRealReport } from '../../../shared/api/scan'
 
 const SEV_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
@@ -20,10 +23,12 @@ const SEV_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
 const SAST_ENGINE_LABEL = 'ScanOps Rebuild (Qwen3.5-9B)'
 
 export default function ReportPage() {
+  const { t } = useTranslation('report')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { toast } = useToast()
   const [report, setReport] = useState<Report | null>(null)
+  const modeLabel = useModeLabel(report?.mode ?? 'WEBSITE')
 
   useEffect(() => {
     if (!id) return
@@ -52,7 +57,7 @@ export default function ReportPage() {
       <AppNav />
       <main className="max-w-[860px] mx-auto px-6 py-7 fade-up">
         <button onClick={() => navigate('/reports')} className="flex items-center gap-1 text-[13px] text-ink-muted font-medium hover:text-ink-sub mb-4">
-          <Icon name="chevron-left" size={16} /> 스캔 기록
+          <Icon name="chevron-left" size={16} /> {t('back')}
         </button>
 
         {/* header */}
@@ -60,28 +65,28 @@ export default function ReportPage() {
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-2">
-                <Badge tone={report.mode === 'WEBSITE' ? 'brand' : report.mode === 'GITHUB_REPO' ? 'purple' : 'success'}>{m.tag} · {m.label}</Badge>
+                <Badge tone={report.mode === 'WEBSITE' ? 'brand' : report.mode === 'GITHUB_REPO' ? 'purple' : 'success'}>{m.tag} · {modeLabel}</Badge>
                 <span className="text-[12.5px] text-ink-muted">{formatDateTime(report.createdAt)}</span>
               </div>
               <h1 className="text-[22px] font-bold text-ink tracking-tight break-all flex items-center gap-2">
                 <span style={{ color: m.color }}><Icon name={m.icon} size={20} /></span>{report.target}
               </h1>
               <p className="mt-1 text-[13px] text-ink-muted">
-                분석 {report.durationSec ? `${report.durationSec}초` : ''}{report.loc ? ` · ${report.loc.toLocaleString('ko-KR')}줄` : ''} · 엔진 {report.mode === 'WEBSITE' ? 'OWASP ZAP + AI 분석' : SAST_ENGINE_LABEL}
+                {t('detail.analysisLabel')} {report.durationSec ? t('detail.seconds', { value: report.durationSec }) : ''}{report.loc ? ` · ${t('detail.lines', { value: report.loc.toLocaleString('ko-KR') })}` : ''} · {t('detail.engineLabel')} {report.mode === 'WEBSITE' ? t('detail.engineWebsite') : SAST_ENGINE_LABEL}
               </p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" leftIcon="download" onClick={() => toast('PDF 리포트를 준비했어요')}>PDF</Button>
-              <Button size="sm" leftIcon="refresh-cw" onClick={() => navigate('/scan')}>재스캔</Button>
+              <Button variant="outline" size="sm" leftIcon="download" onClick={() => toast(t('detail.toast.pdfReady'))}>PDF</Button>
+              <Button size="sm" leftIcon="refresh-cw" onClick={() => navigate('/scan')}>{t('detail.rescan')}</Button>
             </div>
           </div>
 
           <div className="h-px bg-line my-5" />
 
           <div className="flex items-center gap-6 flex-wrap">
-            <Stat value={String(report.total)} label="취약점" />
+            <Stat value={String(report.total)} label={t('detail.stats.vulnerabilities')} />
             <div className="w-px h-10 bg-line" />
-            <Stat value={report.maxCvss.toFixed(1)} label="최고 CVSS" color={report.maxCvss >= 9 ? 'var(--color-sev-critical)' : 'var(--color-sev-high)'} />
+            <Stat value={report.maxCvss.toFixed(1)} label={t('detail.stats.maxCvss')} color={report.maxCvss >= 9 ? 'var(--color-sev-critical)' : 'var(--color-sev-high)'} />
             <div className="w-px h-10 bg-line" />
             <div className="flex-1 min-w-[200px]">
               <SeverityBar counts={report.counts} total={report.total} />
@@ -100,13 +105,13 @@ export default function ReportPage() {
         {report.total === 0 ? (
           <Card pad="lg" className="mt-4 text-center py-14">
             <span className="inline-flex w-14 h-14 rounded-2xl bg-success-soft text-success items-center justify-center mb-3"><Icon name="check-circle" size={28} /></span>
-            <p className="text-[15px] font-semibold text-ink">발견된 취약점이 없어요</p>
-            <p className="mt-1 text-[13px] text-ink-muted">현재 기준으로 안전합니다. 코드가 바뀌면 다시 검사해 주세요.</p>
+            <p className="text-[15px] font-semibold text-ink">{t('detail.empty.title')}</p>
+            <p className="mt-1 text-[13px] text-ink-muted">{t('detail.empty.desc')}</p>
           </Card>
         ) : (
           <div className="mt-4 flex flex-col gap-2.5">
-            <p className="text-[13px] font-semibold text-ink-sub px-1">발견된 취약점 {report.total}건</p>
-            {sorted.map((v, i) => <VulnCard key={v.id} v={v} defaultOpen={i === 0} onCopy={() => toast('복사되었어요', 'success')} />)}
+            <p className="text-[13px] font-semibold text-ink-sub px-1">{t('detail.foundCount', { count: report.total })}</p>
+            {sorted.map((v, i) => <VulnCard key={v.id} v={v} defaultOpen={i === 0} onCopy={() => toast(t('detail.toast.copied'), 'success')} />)}
           </div>
         )}
       </main>
@@ -132,13 +137,14 @@ function SeverityBar({ counts, total }: { counts: SeverityCounts; total: number 
   )
 }
 
-const VERDICT: Record<Vulnerability['graphVerdict'], { label: string; tone: 'success' | 'brand' | 'neutral' }> = {
-  CONFIRMED: { label: '그래프 확정', tone: 'success' },
-  SUPPRESSED: { label: '그래프 검증', tone: 'neutral' },
-  LLM_ONLY: { label: 'AI 탐지', tone: 'brand' },
+const VERDICT: Record<Vulnerability['graphVerdict'], { key: string; tone: 'success' | 'brand' | 'neutral' }> = {
+  CONFIRMED: { key: 'confirmed', tone: 'success' },
+  SUPPRESSED: { key: 'suppressed', tone: 'neutral' },
+  LLM_ONLY: { key: 'llmOnly', tone: 'brand' },
 }
 
 function VulnCard({ v, defaultOpen, onCopy }: { v: Vulnerability; defaultOpen?: boolean; onCopy: () => void }) {
+  const { t } = useTranslation('report')
   const [open, setOpen] = useState(defaultOpen)
   const sev = SEVERITY_META[v.severity]
   const verdict = VERDICT[v.graphVerdict]
@@ -166,45 +172,45 @@ function VulnCard({ v, defaultOpen, onCopy }: { v: Vulnerability; defaultOpen?: 
             <div className="mt-3 flex items-start gap-2.5 rounded-xl bg-brand-soft/60 px-4 py-3">
               <span className="text-brand mt-0.5 shrink-0"><Icon name="info" size={16} /></span>
               <p className="text-[13.5px] text-ink-sub leading-relaxed">
-                <span className="font-bold text-brand">쉽게 말하면</span>　{v.plain}
+                <span className="font-bold text-brand">{t('vuln.plainLabel')}</span>　{v.plain}
               </p>
             </div>
           )}
           {v.summary && <p className="text-[13.5px] text-ink-sub leading-relaxed mt-3">{v.summary}</p>}
 
           {v.evidence && (
-            <Section icon="code" title="증거">
+            <Section icon="code" title={t('vuln.evidence')}>
               <CodeBlock code={v.evidence} onCopy={onCopy} />
-              <p className="mt-2 text-[12px] text-ink-muted">위치: <span className="font-medium text-ink-sub">{v.location}</span></p>
+              <p className="mt-2 text-[12px] text-ink-muted">{t('vuln.locationLabel')} <span className="font-medium text-ink-sub">{v.location}</span></p>
             </Section>
           )}
 
           {v.attack && (
-            <Section icon="alert-triangle" title="공격 시나리오" tone="danger">
+            <Section icon="alert-triangle" title={t('vuln.attackScenario')} tone="danger">
               <p className="text-[13.5px] text-ink-sub leading-relaxed">{v.attack}</p>
             </Section>
           )}
 
           {v.fix && (
-            <Section icon="check-circle" title="해결 방법" tone="success">
+            <Section icon="check-circle" title={t('vuln.fixMethod')} tone="success">
               <p className="text-[13.5px] text-ink-sub leading-relaxed">{v.fix}</p>
               {v.fixCode && <div className="mt-2.5"><CodeBlock code={v.fixCode} onCopy={onCopy} good /></div>}
               <button
                 type="button"
-                onClick={() => { navigator.clipboard?.writeText(buildFixPrompt(v)); onCopy() }}
+                onClick={() => { navigator.clipboard?.writeText(buildFixPrompt(v, t)); onCopy() }}
                 className="mt-3 inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white border border-success-soft text-success text-[12.5px] font-semibold hover:bg-success-soft transition-colors"
               >
-                <Icon name="zap" size={13} /> AI 수정 프롬프트 복사
+                <Icon name="zap" size={13} /> {t('vuln.copyFixPrompt')}
               </button>
             </Section>
           )}
 
           <div className="mt-4 pt-3 border-t border-line">
-            <p className="text-[11.5px] font-bold text-ink-muted mb-2">탐지 근거</p>
+            <p className="text-[11.5px] font-bold text-ink-muted mb-2">{t('vuln.detectionBasis')}</p>
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge tone={verdict.tone} size="sm"><Icon name="shield" size={12} /> {verdict.label}</Badge>
+              <Badge tone={verdict.tone} size="sm"><Icon name="shield" size={12} /> {t(`vuln.verdict.${verdict.key}`)}</Badge>
               <Badge tone="neutral" size="sm"><Icon name="cpu" size={12} /> {v.aiModel}</Badge>
-              <Badge tone="neutral" size="sm">신뢰도 {(v.confidence * 100).toFixed(0)}%</Badge>
+              <Badge tone="neutral" size="sm">{t('vuln.confidence', { value: (v.confidence * 100).toFixed(0) })}</Badge>
               <span className="ml-auto text-[11px] text-ink-faint font-mono hidden sm:block">{v.cvssVector}</span>
             </div>
           </div>
@@ -215,17 +221,17 @@ function VulnCard({ v, defaultOpen, onCopy }: { v: Vulnerability; defaultOpen?: 
 }
 
 /** 사용자가 ChatGPT·Claude 등에 그대로 붙여넣어 수정 코드를 받을 수 있는 프롬프트 생성 (LLM 호출 없음). */
-function buildFixPrompt(v: Vulnerability): string {
+function buildFixPrompt(v: Vulnerability, t: TFunction): string {
   return [
-    '다음 보안 취약점을 수정하는 방법을 내 코드에 맞는 예시와 함께 알려줘.',
+    t('vuln.fixPrompt.intro'),
     '',
-    `[취약점] ${v.name}${v.cwe ? ` (${v.cwe})` : ''}`,
-    `[심각도] ${v.severity} · CVSS ${v.cvss.toFixed(1)}`,
-    v.location ? `[위치] ${v.location}` : '',
-    v.summary ? `[문제] ${v.summary}` : '',
-    v.fix ? `[권장 조치] ${v.fix}` : '',
+    `${t('vuln.fixPrompt.vulnLabel')} ${v.name}${v.cwe ? ` (${v.cwe})` : ''}`,
+    `${t('vuln.fixPrompt.severityLabel')} ${v.severity} · CVSS ${v.cvss.toFixed(1)}`,
+    v.location ? `${t('vuln.fixPrompt.locationLabel')} ${v.location}` : '',
+    v.summary ? `${t('vuln.fixPrompt.problemLabel')} ${v.summary}` : '',
+    v.fix ? `${t('vuln.fixPrompt.fixLabel')} ${v.fix}` : '',
     '',
-    '구체적인 수정 코드와 설정(헤더/옵션 등)을 단계별로 작성해줘.',
+    t('vuln.fixPrompt.outro'),
   ].filter(Boolean).join('\n')
 }
 
@@ -243,6 +249,7 @@ function Section({ icon, title, tone, children }: { icon: Parameters<typeof Icon
 }
 
 function CodeBlock({ code, onCopy, good }: { code: string; onCopy: () => void; good?: boolean }) {
+  const { t } = useTranslation('report')
   return (
     <div className="relative group">
       <pre className={`rounded-xl px-4 py-3 text-[12.5px] leading-relaxed font-mono overflow-x-auto border ${
@@ -253,7 +260,7 @@ function CodeBlock({ code, onCopy, good }: { code: string; onCopy: () => void; g
       <button
         onClick={() => { navigator.clipboard?.writeText(code); onCopy() }}
         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-lg bg-white border border-line flex items-center justify-center text-ink-muted hover:text-ink"
-        aria-label="복사"
+        aria-label={t('vuln.copyAriaLabel')}
       >
         <Icon name="copy" size={14} />
       </button>

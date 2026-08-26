@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import AppNav from '../../../shared/ui/AppNav'
 import Card from '../../../shared/ui/Card'
 import Button from '../../../shared/ui/Button'
@@ -10,13 +11,15 @@ import Modal from '../../../shared/ui/Modal'
 import TokenBalance from '../../../shared/ui/TokenBalance'
 import { useToast } from '../../../shared/ui/Toast'
 import { useAuth } from '../../../shared/lib/auth'
-import { planById, won } from '../../../shared/lib/mock'
+import { won } from '../../../shared/lib/mock'
+import { usePlanText } from '../../../shared/lib/planText'
 import { fetchWallet, purchaseDast, purchaseTokens, type TokenWallet } from '../../../shared/api/tokens'
 import { fetchSurveyStatus } from '../../../shared/api/survey'
 
 type TopUpKind = 'DAST' | 'TOKEN'
 
 export default function MyPage() {
+  const { t } = useTranslation('mypage')
   const navigate = useNavigate()
   const { user } = useAuth()
   const [wallet, setWallet] = useState<TokenWallet | null>(null)
@@ -27,14 +30,14 @@ export default function MyPage() {
     reload()
     fetchSurveyStatus().then((s) => setSurveyDone(s.completed)).catch(() => {})
   }, [])
+  const plan = usePlanText(user?.plan ?? 'FREE')
   if (!user) return null
-  const plan = planById(user.plan)
 
   return (
     <div className="min-h-screen bg-surface">
       <AppNav />
       <main className="max-w-[820px] mx-auto px-6 py-8 fade-up">
-        <h1 className="text-[26px] font-bold text-ink tracking-tight">마이페이지</h1>
+        <h1 className="text-[26px] font-bold text-ink tracking-tight">{t('title')}</h1>
 
         {/* profile */}
         <Card pad="lg" className="mt-5">
@@ -49,7 +52,7 @@ export default function MyPage() {
                 </span>
               )}
             </div>
-            <Button variant="outline" size="sm" leftIcon="settings" onClick={() => navigate('/settings')}>설정</Button>
+            <Button variant="outline" size="sm" leftIcon="settings" onClick={() => navigate('/settings')}>{t('settings')}</Button>
           </div>
         </Card>
 
@@ -57,26 +60,26 @@ export default function MyPage() {
         <Card pad="lg" className="mt-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h2 className="text-[17px] font-bold text-ink">{plan.name} 플랜</h2>
-              {plan.id === 'PRO' && <Badge tone="brand" size="sm">인기</Badge>}
-              {wallet?.team && <Badge tone="neutral" size="sm">팀 공유 지갑</Badge>}
+              <h2 className="text-[17px] font-bold text-ink">{plan.name} {t('plan.suffix')}</h2>
+              {plan.id === 'PRO' && <Badge tone="brand" size="sm">{t('plan.popular')}</Badge>}
+              {wallet?.team && <Badge tone="neutral" size="sm">{t('plan.teamWallet')}</Badge>}
             </div>
-            <Button size="sm" variant="weak" onClick={() => navigate('/pricing')}>플랜 변경</Button>
+            <Button size="sm" variant="weak" onClick={() => navigate('/pricing')}>{t('plan.change')}</Button>
           </div>
           <p className="mt-0.5 text-[13px] text-ink-muted">
-            {plan.price === 0 ? '무료' : `${won(plan.price)}${plan.per}`}
-            {wallet?.periodEnd && ` · 다음 결제일 ${new Date(wallet.periodEnd).toLocaleDateString('ko-KR')}`}
+            {plan.price === 0 ? t('plan.free') : `${won(plan.price)}${plan.per}`}
+            {wallet?.periodEnd && ` · ${t('plan.nextBilling', { date: new Date(wallet.periodEnd).toLocaleDateString('ko-KR') })}`}
           </p>
 
           <div className="mt-5"><TokenBalance wallet={wallet} /></div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
             <CapacityTile
-              icon="globe" label="웹사이트 점검" value={wallet?.websiteScansLeft} unit="회 더 가능"
+              icon="globe" label={t('capacity.website')} value={wallet?.websiteScansLeft} unit={t('capacity.websiteUnit')}
               color="var(--color-scan-web)" onTopUp={wallet ? () => setTopUp('DAST') : undefined}
             />
             <CapacityTile
-              icon="box" label="소스코드 점검" value={wallet?.sourceLinesLeft} unit="줄 더 가능"
+              icon="box" label={t('capacity.source')} value={wallet?.sourceLinesLeft} unit={t('capacity.sourceUnit')}
               color="var(--color-scan-code)" big onTopUp={wallet ? () => setTopUp('TOKEN') : undefined}
             />
           </div>
@@ -90,25 +93,25 @@ export default function MyPage() {
             </span>
             <div className="flex items-center gap-2">
               <div>
-                <p className="text-[14.5px] font-bold text-ink">베타 테스트 설문</p>
+                <p className="text-[14.5px] font-bold text-ink">{t('survey.title')}</p>
                 <p className="text-[12.5px] text-ink-muted">
-                  {surveyDone ? '참여해주셔서 감사해요.' : '1분이면 끝나요. 사용 경험을 들려주세요.'}
+                  {surveyDone ? t('survey.done') : t('survey.todo')}
                 </p>
               </div>
-              {surveyDone && <Badge tone="success" size="sm">완료</Badge>}
+              {surveyDone && <Badge tone="success" size="sm">{t('survey.doneBadge')}</Badge>}
             </div>
           </div>
           <Button size="sm" disabled={surveyDone} onClick={() => navigate('/survey')}>
-            {surveyDone ? '설문 완료' : '설문 참여하기'}
+            {surveyDone ? t('survey.doneButton') : t('survey.startButton')}
           </Button>
         </Card>
 
         {/* quick links */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-          <QuickLink icon="github" title="연동 관리" sub="GitHub·App 연결" onClick={() => navigate('/integrations')} />
-          <QuickLink icon="users" title="팀 관리" sub="멤버·권한 초대" onClick={() => navigate('/team')} />
-          <QuickLink icon="credit-card" title="결제·청구" sub="플랜·영수증" onClick={() => navigate('/settings')} />
-          <QuickLink icon="file-text" title="스캔 기록" sub="지난 리포트" onClick={() => navigate('/reports')} />
+          <QuickLink icon="github" title={t('quickLinks.integrations.title')} sub={t('quickLinks.integrations.sub')} onClick={() => navigate('/integrations')} />
+          <QuickLink icon="users" title={t('quickLinks.team.title')} sub={t('quickLinks.team.sub')} onClick={() => navigate('/team')} />
+          <QuickLink icon="credit-card" title={t('quickLinks.billing.title')} sub={t('quickLinks.billing.sub')} onClick={() => navigate('/settings')} />
+          <QuickLink icon="file-text" title={t('quickLinks.reports.title')} sub={t('quickLinks.reports.sub')} onClick={() => navigate('/reports')} />
         </div>
       </main>
 
@@ -133,6 +136,7 @@ export default function MyPage() {
 function TopUpModal({ kind, wallet, onClose, onDone }: {
   kind: TopUpKind; wallet: TokenWallet; onClose: () => void; onDone: (w: TokenWallet) => void
 }) {
+  const { t } = useTranslation('mypage')
   const { toast } = useToast()
   const [units, setUnits] = useState(1)
   const [loading, setLoading] = useState(false)
@@ -142,7 +146,7 @@ function TopUpModal({ kind, wallet, onClose, onDone }: {
   const amountPerUnit = isDast ? wallet.dastTopUpCount : wallet.topUpTokens
   const totalAmount = amountPerUnit * units
   const totalPrice = priceKrw * units
-  const amountLabel = isDast ? `${totalAmount}회` : `${totalAmount.toLocaleString('ko-KR')}토큰`
+  const amountLabel = isDast ? t('topUp.amountDast', { count: totalAmount }) : t('topUp.amountToken', { count: totalAmount.toLocaleString('ko-KR') })
 
   const confirm = async () => {
     setLoading(true)
@@ -151,9 +155,9 @@ function TopUpModal({ kind, wallet, onClose, onDone }: {
       await (isDast ? purchaseDast(units) : purchaseTokens(units))
       const fresh = await fetchWallet()
       onDone(fresh)
-      toast(`${amountLabel} 충전됐어요`, 'success')
+      toast(t('topUp.success', { amount: amountLabel }), 'success')
     } catch (e) {
-      toast(e instanceof Error ? e.message : '충전에 실패했어요', 'danger')
+      toast(e instanceof Error ? e.message : t('topUp.failure'), 'danger')
     } finally {
       setLoading(false)
     }
@@ -163,22 +167,22 @@ function TopUpModal({ kind, wallet, onClose, onDone }: {
     <Modal
       open
       onClose={onClose}
-      title={isDast ? 'DAST(웹 점검) 충전' : '토큰(SAST·액션) 충전'}
+      title={isDast ? t('topUp.titleDast') : t('topUp.titleToken')}
       footer={
         <>
-          <Button variant="ghost" block onClick={onClose}>취소</Button>
-          <Button block loading={loading} onClick={confirm}>{won(totalPrice)} 결제하기</Button>
+          <Button variant="ghost" block onClick={onClose}>{t('topUp.cancel')}</Button>
+          <Button block loading={loading} onClick={confirm}>{t('topUp.pay', { amount: won(totalPrice) })}</Button>
         </>
       }
     >
       <p className="text-[13.5px] text-ink-sub leading-relaxed">
         {isDast
-          ? `${won(priceKrw)}에 웹사이트 점검 ${amountPerUnit}회를 충전해요. 이월되어 다음 달에도 쓸 수 있어요.`
-          : `${won(priceKrw)}에 ${amountPerUnit.toLocaleString('ko-KR')}토큰을 충전해요. 이월되어 다음 달에도 쓸 수 있어요.`}
+          ? t('topUp.descDast', { price: won(priceKrw), count: amountPerUnit })
+          : t('topUp.descToken', { price: won(priceKrw), count: amountPerUnit.toLocaleString('ko-KR') })}
       </p>
 
       <div className="mt-4 flex items-center justify-between rounded-xl bg-surface border border-line px-4 py-3">
-        <span className="text-[13.5px] font-medium text-ink-sub">구좌 수</span>
+        <span className="text-[13.5px] font-medium text-ink-sub">{t('topUp.units')}</span>
         <div className="flex items-center gap-3">
           <button
             type="button" onClick={() => setUnits((u) => Math.max(1, u - 1))}
@@ -194,11 +198,11 @@ function TopUpModal({ kind, wallet, onClose, onDone }: {
       </div>
 
       <div className="mt-3 flex items-center justify-between px-1">
-        <span className="text-[13px] text-ink-muted">충전량</span>
+        <span className="text-[13px] text-ink-muted">{t('topUp.amount')}</span>
         <span className="text-[13.5px] font-semibold text-ink tnum">{amountLabel}</span>
       </div>
       <div className="mt-1 flex items-center justify-between px-1">
-        <span className="text-[13px] text-ink-muted">결제 금액</span>
+        <span className="text-[13px] text-ink-muted">{t('topUp.price')}</span>
         <span className="text-[15px] font-bold text-ink tnum">{won(totalPrice)}</span>
       </div>
     </Modal>
@@ -208,6 +212,7 @@ function TopUpModal({ kind, wallet, onClose, onDone }: {
 function CapacityTile({ icon, label, value, unit, color, big, onTopUp }: {
   icon: IconName; label: string; value?: number; unit: string; color: string; big?: boolean; onTopUp?: () => void
 }) {
+  const { t } = useTranslation('mypage')
   const ready = value != null
   const fmt = (n: number) => (big ? n.toLocaleString('ko-KR') : String(n))
   return (
@@ -218,7 +223,7 @@ function CapacityTile({ icon, label, value, unit, color, big, onTopUp }: {
           <button
             type="button" onClick={onTopUp}
             className="text-[11.5px] font-semibold text-brand hover:text-brand-hover flex items-center gap-0.5"
-          ><Icon name="plus" size={12} />충전</button>
+          ><Icon name="plus" size={12} />{t('capacity.topUp')}</button>
         )}
       </div>
       <p className="mt-1.5 text-ink"><span className="text-[16px] font-bold tnum">{ready ? fmt(value!) : '—'}</span><span className="text-[12px] text-ink-muted"> {unit}</span></p>

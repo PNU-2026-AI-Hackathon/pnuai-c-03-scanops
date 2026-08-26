@@ -6,8 +6,10 @@ export interface TourStep {
   id: string
   /** CSS selector for the element to spotlight (matched via data-tour attributes). */
   selector: string
-  title: string
-  desc: string
+  /** i18n key (common namespace) for the step title — resolved at render time so it tracks the active language. */
+  titleKey: string
+  /** i18n key (common namespace) for the step description — resolved at render time so it tracks the active language. */
+  descKey: string
   placement: 'bottom' | 'top'
 }
 
@@ -16,50 +18,50 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: 'new-scan',
     selector: '[data-tour="dashboard-new-scan"]',
-    title: '여기서 스캔을 시작해요',
-    desc: '웹사이트 URL은 DAST(동적 분석), GitHub 레포는 SAST(정적 분석)로 검사할 수 있어요.',
+    titleKey: 'tour.newScan.title',
+    descKey: 'tour.newScan.desc',
     placement: 'bottom',
   },
   {
     id: 'usage',
     selector: '[data-tour="usage-cards"]',
-    title: '사용량을 한눈에',
-    desc: 'DAST·SAST·PR 자동분석 사용량과 한도를 확인해요. 한도를 넘으면 여기 표시돼요.',
+    titleKey: 'tour.usage.title',
+    descKey: 'tour.usage.desc',
     placement: 'bottom',
   },
   {
     id: 'token-balance',
     selector: '[data-tour="posture-card"]',
-    title: '토큰 현황',
-    desc: '이번 달 받은 토큰과 남은 잔액을 확인해요. 진행 중인 스캔이 예약해 둔 토큰도 여기 표시돼요.',
+    titleKey: 'tour.tokenBalance.title',
+    descKey: 'tour.tokenBalance.desc',
     placement: 'bottom',
   },
   {
     id: 'recent-scans',
     selector: '[data-tour="recent-scans-card"]',
-    title: '최근 스캔 기록',
-    desc: '실행한 스캔 목록이에요. 완료된 스캔을 누르면 취약점 상세 리포트로 이동해요.',
+    titleKey: 'tour.recentScans.title',
+    descKey: 'tour.recentScans.desc',
     placement: 'top',
   },
   {
     id: 'integrations',
     selector: '[data-tour="nav-integrations"]',
-    title: 'GitHub 레포 연동',
-    desc: 'GitHub를 연동하면 레포 전체 SAST 분석과 PR 자동 분석을 쓸 수 있어요.',
+    titleKey: 'tour.integrations.title',
+    descKey: 'tour.integrations.desc',
     placement: 'bottom',
   },
   {
     id: 'pricing',
     selector: '[data-tour="nav-pricing"]',
-    title: 'Pro, 지금 무료로 써보세요',
-    desc: '베타 기간에는 Pro 요금제를 무료로 체험할 수 있어요. 요금제에서 Pro를 선택해 "결제하기"를 눌러도 실제로 청구되지 않으니 편하게 눌러보세요.',
+    titleKey: 'tour.pricing.title',
+    descKey: 'tour.pricing.desc',
     placement: 'bottom',
   },
   {
     id: 'account',
     selector: '[data-tour="nav-avatar"]',
-    title: '마이페이지',
-    desc: '플랜·토큰 잔액을 확인하고, 베타 테스트 설문에 참여할 수 있어요.',
+    titleKey: 'tour.account.title',
+    descKey: 'tour.account.desc',
     placement: 'bottom',
   },
 ]

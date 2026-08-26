@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import Logo from '../../../shared/ui/Logo'
 import Icon from '../../../shared/ui/Icon'
 import { useAuth } from '../../../shared/lib/auth'
@@ -9,6 +10,7 @@ import { useAuth } from '../../../shared/lib/auth'
  * 리다이렉트한다. 여기서 토큰을 저장하고 프로필을 불러온 뒤 대시보드로 이동한다.
  */
 export default function GitHubCallbackPage() {
+  const { t } = useTranslation('auth')
   const navigate = useNavigate()
   const location = useLocation()
   const { loginWithToken } = useAuth()
@@ -48,24 +50,24 @@ export default function GitHubCallbackPage() {
             <>
               <div className="flex items-center gap-2.5 text-ink">
                 <span className="w-5 h-5 rounded-full border-2 border-line border-t-brand spin" />
-                <p className="text-[17px] font-semibold">GitHub와 연결하는 중…</p>
+                <p className="text-[17px] font-semibold">{t('callback.connecting')}</p>
               </div>
-              <p className="mt-2 text-sm text-ink-muted">권한을 확인하고 계정을 안전하게 연결하고 있어요.</p>
+              <p className="mt-2 text-sm text-ink-muted">{t('callback.connectingDesc')}</p>
             </>
           )}
           {phase === 'done' && (
             <>
               <p className="text-[17px] font-semibold text-ink flex items-center gap-2">
-                <span className="text-success"><Icon name="check-circle" size={20} /></span> 연결 완료
+                <span className="text-success"><Icon name="check-circle" size={20} /></span> {t('callback.done')}
               </p>
-              <p className="mt-2 text-sm text-ink-muted">잠시 후 이동합니다…</p>
+              <p className="mt-2 text-sm text-ink-muted">{t('callback.doneDesc')}</p>
             </>
           )}
           {phase === 'error' && (
             <>
-              <p className="text-[17px] font-semibold text-ink">연결에 실패했어요</p>
+              <p className="text-[17px] font-semibold text-ink">{t('callback.error')}</p>
               <button onClick={() => navigate('/login')} className="mt-4 text-brand font-semibold text-sm hover:underline">
-                다시 시도하기
+                {t('callback.retry')}
               </button>
             </>
           )}

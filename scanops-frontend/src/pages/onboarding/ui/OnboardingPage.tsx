@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import Logo from '../../../shared/ui/Logo'
 import Icon, { type IconName } from '../../../shared/ui/Icon'
 import Button from '../../../shared/ui/Button'
@@ -9,6 +10,7 @@ import { useToast } from '../../../shared/ui/Toast'
 import { githubLinkUrl } from '../../../shared/lib/config'
 
 export default function OnboardingPage() {
+  const { t } = useTranslation('onboarding')
   const navigate = useNavigate()
   const { user } = useAuth()
   const { toast } = useToast()
@@ -18,11 +20,11 @@ export default function OnboardingPage() {
   // 실제 GitHub OAuth 연동 — 현재(이메일) 계정에 GitHub을 붙인다(같은 계정).
   const connectGithub = () => {
     const token = getToken()
-    if (!token) { toast('먼저 로그인해 주세요'); return }
+    if (!token) { toast(t('loginRequired')); return }
     window.location.href = githubLinkUrl(token)
   }
 
-  const steps = ['GitHub 연결', '시작 방법 선택']
+  const steps = [t('steps.connectGithub'), t('steps.chooseStart')]
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
@@ -47,9 +49,9 @@ export default function OnboardingPage() {
 
           {step === 0 && (
             <Card pad="lg">
-              <h1 className="text-[22px] font-bold text-ink">환영해요, {user?.name}님 👋</h1>
+              <h1 className="text-[22px] font-bold text-ink">{t('step0.greeting', { name: user?.name })}</h1>
               <p className="mt-1.5 text-[14.5px] text-ink-sub">
-                GitHub를 연결하면 레포 전체(SAST)·PR 자동 분석을 바로 사용할 수 있어요.
+                {t('step0.desc')}
               </p>
 
               <div className="mt-5 rounded-xl border border-line p-4 flex items-center gap-3.5">
@@ -58,41 +60,41 @@ export default function OnboardingPage() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-[14.5px] font-semibold text-ink">
-                    {connected ? `@${user?.githubLogin} 연결됨` : 'GitHub 계정 연결'}
+                    {connected ? t('step0.connectedTitle', { login: user?.githubLogin }) : t('step0.connectTitle')}
                   </p>
                   <p className="text-[12.5px] text-ink-muted">
-                    {connected ? '레포·PR 분석을 사용할 수 있어요.' : '읽기 권한만 요청합니다.'}
+                    {connected ? t('step0.connectedSub') : t('step0.connectSub')}
                   </p>
                 </div>
                 {connected ? (
                   <span className="text-success"><Icon name="check-circle" size={22} /></span>
                 ) : (
                   <Button size="sm" variant="dark" leftIcon="github" onClick={connectGithub}>
-                    연결
+                    {t('step0.connectButton')}
                   </Button>
                 )}
               </div>
 
               <div className="mt-5 flex gap-2.5">
-                <Button variant="ghost" block onClick={() => setStep(1)}>나중에 하기</Button>
-                <Button block rightIcon="arrow-right" onClick={() => setStep(1)}>다음</Button>
+                <Button variant="ghost" block onClick={() => setStep(1)}>{t('step0.later')}</Button>
+                <Button block rightIcon="arrow-right" onClick={() => setStep(1)}>{t('step0.next')}</Button>
               </div>
             </Card>
           )}
 
           {step === 1 && (
             <Card pad="lg">
-              <h1 className="text-[22px] font-bold text-ink">무엇부터 해볼까요?</h1>
-              <p className="mt-1.5 text-[14.5px] text-ink-sub">원하는 방식으로 첫 보안 점검을 시작해요.</p>
+              <h1 className="text-[22px] font-bold text-ink">{t('step1.title')}</h1>
+              <p className="mt-1.5 text-[14.5px] text-ink-sub">{t('step1.desc')}</p>
 
               <div className="mt-5 flex flex-col gap-3">
-                <StartOption icon="globe" tag="DAST · 무료 1회" title="웹사이트 검사" sub="실행 중인 사이트를 동적 분석" onClick={() => navigate('/scan')} />
-                <StartOption icon="box" tag="SAST" title="GitHub 레포 분석" sub="소스코드 전체 정적 분석" onClick={() => navigate(connected ? '/scan' : '/integrations')} />
-                <StartOption icon="home" tag="둘러보기" title="대시보드로 이동" sub="샘플 리포트와 사용량을 먼저 확인" onClick={() => navigate('/dashboard')} />
+                <StartOption icon="globe" tag={t('step1.options.website.tag')} title={t('step1.options.website.title')} sub={t('step1.options.website.sub')} onClick={() => navigate('/scan')} />
+                <StartOption icon="box" tag={t('step1.options.repo.tag')} title={t('step1.options.repo.title')} sub={t('step1.options.repo.sub')} onClick={() => navigate(connected ? '/scan' : '/integrations')} />
+                <StartOption icon="home" tag={t('step1.options.dashboard.tag')} title={t('step1.options.dashboard.title')} sub={t('step1.options.dashboard.sub')} onClick={() => navigate('/dashboard')} />
               </div>
 
               <button onClick={() => setStep(0)} className="mt-5 text-[13px] text-ink-muted font-medium hover:text-ink-sub flex items-center gap-1">
-                <Icon name="chevron-left" size={15} /> 이전
+                <Icon name="chevron-left" size={15} /> {t('step1.back')}
               </button>
             </Card>
           )}

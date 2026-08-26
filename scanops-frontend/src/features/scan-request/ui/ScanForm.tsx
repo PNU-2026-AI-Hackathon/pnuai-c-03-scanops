@@ -1,22 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import Icon from '../../../shared/ui/Icon'
 import Button from '../../../shared/ui/Button'
 import Card from '../../../shared/ui/Card'
 import Badge from '../../../shared/ui/Badge'
 import { useToast } from '../../../shared/ui/Toast'
 import { MODE_META, type ScanMode } from '../../../shared/lib/mock'
+import { useModeLabel } from '../../../shared/lib/planText'
 import { useAuth } from '../../../shared/lib/auth'
 import { initDomainVerify, confirmDomainVerify, type DomainVerifyInit } from '../../../shared/api/verify'
 import { createWebsiteScan, createRepoScan } from '../../../shared/api/scan'
 import { fetchWallet, type TokenWallet } from '../../../shared/api/tokens'
 
 const ORDER: ScanMode[] = ['WEBSITE', 'GITHUB_REPO', 'GITHUB_ACTIONS']
-const SUB: Record<ScanMode, string> = {
-  WEBSITE: '실행 중인 앱 동적 분석',
-  GITHUB_REPO: '소스코드 전체 정적 분석',
-  GITHUB_ACTIONS: 'PR diff 자동 검사',
-}
 
 type VState = 'idle' | 'unverified' | 'pending' | 'checking' | 'verified'
 
@@ -37,12 +34,19 @@ const isSelfScanDomain = (url: string): boolean => {
 }
 
 export default function ScanForm() {
+  const { t } = useTranslation('scan')
   const navigate = useNavigate()
   const location = useLocation()
   // 연동 페이지 등에서 레포/모드를 넘겨주면 미리 채운다.
   const prefill = location.state as { mode?: ScanMode; target?: string } | null
   const { user } = useAuth()
   const { toast } = useToast()
+  // ORDER는 고정된 3개 모드이므로 훅을 반복문 없이 각각 호출해도 안전하다.
+  const modeLabels: Record<ScanMode, string> = {
+    WEBSITE: useModeLabel('WEBSITE'),
+    GITHUB_REPO: useModeLabel('GITHUB_REPO'),
+    GITHUB_ACTIONS: useModeLabel('GITHUB_ACTIONS'),
+  }
   const [mode, setMode] = useState<ScanMode>(prefill?.mode ?? 'WEBSITE')
   const [target, setTarget] = useState(prefill?.target ?? '')
   const [email, setEmail] = useState(user?.email ?? '')
@@ -81,7 +85,7 @@ export default function ScanForm() {
       setVinfo(info)
       if (info.verified) setVstate('verified')
     } catch {
-      setError('인증 시작에 실패했어요. 잠시 후 다시 시도해 주세요.')
+      setError(t('scanForm.errors.verifyStartFailed'))
       setVstate('unverified')
     }
   }
@@ -93,14 +97,14 @@ export default function ScanForm() {
       const res = await confirmDomainVerify(target)
       if (res.verified) {
         setVstate('verified')
-        toast('도메인 인증 완료', 'success')
+        toast(t('scanForm.toast.domainVerified'), 'success')
       } else {
         setVstate('pending')
-        setError('파일을 찾지 못했어요. 경로와 내용을 다시 확인해 주세요.')
+        setError(t('scanForm.errors.fileNotFound'))
       }
     } catch {
       setVstate('pending')
-      setError('확인에 실패했어요. 파일이 공개 접근 가능한지 확인해 주세요.')
+      setError(t('scanForm.errors.checkFailed'))
     }
   }
 
@@ -112,9 +116,9 @@ export default function ScanForm() {
     e.preventDefault()
     setError('')
     if (!canScan) {
-      if (noDastLeft) return setError('이번 달 DAST 스캔 기회를 모두 사용했어요. 충전하거나 다음 달을 기다려 주세요.')
-      if (noSastLeft) return setError('SAST 사용 가능한 줄 수가 부족해요. 충전하거나 다음 달을 기다려 주세요.')
-      return setError(isRepo ? 'GitHub 레포 소유 확인이 필요해요.' : '도메인 소유권 인증이 필요해요.')
+      if (noDastLeft) return setError(t('scanForm.errors.noDastLeft'))
+      if (noSastLeft) return setError(t('scanForm.errors.noSastLeft'))
+      return setError(isRepo ? t('scanForm.errors.repoOwnershipRequired') : t('scanForm.errors.domainVerifyRequired'))
     }
     setLoading(true)
     try {
@@ -130,13 +134,13 @@ export default function ScanForm() {
     } catch (err) {
       // 동시 스캔 한도 초과(429), 잔액 부족(402) 등은 백엔드가 구체적인 사유를 내려준다 —
       // 뭉뚱그리지 않고 그대로 보여줘야 "왜 실패했는지" 사용자가 알 수 있다.
-      setError(err instanceof Error ? err.message : '스캔 요청에 실패했어요. 백엔드 연결 상태를 확인해 주세요.')
+      setError(err instanceof Error ? err.message : t('scanForm.errors.scanRequestFailed'))
     } finally {
       setLoading(false)
     }
   }
 
-  const copy = (text: string) => { navigator.clipboard?.writeText(text); toast('복사되었어요', 'success') }
+  const copy = (text: string) => { navigator.clipboard?.writeText(text); toast(t('scanForm.toast.copied'), 'success') }
 
   return (
     <div className="w-full">
@@ -161,8 +165,8 @@ export default function ScanForm() {
                   {m.tag}
                 </span>
               </div>
-              <p className="text-[15px] font-bold text-ink">{m.label}</p>
-              <p className="text-[12.5px] text-ink-muted mt-0.5">{SUB[id]}</p>
+              <p className="text-[15px] font-bold text-ink">{modeLabels[id]}</p>
+              <p className="text-[12.5px] text-ink-muted mt-0.5">{t(`scanForm.modeSub.${id}`)}</p>
             </button>
           )
         })}
@@ -172,18 +176,18 @@ export default function ScanForm() {
         {isActions ? (
           <div className="text-center py-3">
             <span className="inline-flex w-12 h-12 rounded-2xl bg-success-soft text-success items-center justify-center mb-3"><Icon name="git-pull-request" size={24} /></span>
-            <p className="text-[15px] text-ink-sub leading-relaxed mb-1">GitHub Actions 분석은 레포에 ScanOps App을 설치하면 자동으로 동작해요.</p>
-            <p className="text-[13px] text-ink-muted mb-5">PR을 올릴 때마다 변경된 코드가 자동으로 검사됩니다.</p>
-            <Button variant="dark" leftIcon="github" onClick={() => navigate('/integrations')}>App 설치 / 연동 관리</Button>
+            <p className="text-[15px] text-ink-sub leading-relaxed mb-1">{t('scanForm.actions.description')}</p>
+            <p className="text-[13px] text-ink-muted mb-5">{t('scanForm.actions.subDescription')}</p>
+            <Button variant="dark" leftIcon="github" onClick={() => navigate('/integrations')}>{t('scanForm.actions.installButton')}</Button>
           </div>
         ) : (
           <form onSubmit={submit}>
-            <label className="block text-[13px] font-medium text-ink-sub mb-2">{isRepo ? 'GitHub 레포지토리' : '대상 URL'}</label>
+            <label className="block text-[13px] font-medium text-ink-sub mb-2">{isRepo ? t('scanForm.labels.repo') : t('scanForm.labels.targetUrl')}</label>
 
             {isRepo && !ghConnected ? (
               <div className="rounded-xl bg-warning-soft px-4 py-3.5 flex items-center justify-between gap-3">
-                <span className="flex items-center gap-2 text-[13.5px] text-[#9a5b00]"><Icon name="alert-triangle" size={16} /> GitHub 연결이 필요해요.</span>
-                <Button size="sm" variant="dark" leftIcon="github" onClick={() => navigate('/integrations')}>연결하기</Button>
+                <span className="flex items-center gap-2 text-[13.5px] text-[#9a5b00]"><Icon name="alert-triangle" size={16} /> {t('scanForm.github.notConnected')}</span>
+                <Button size="sm" variant="dark" leftIcon="github" onClick={() => navigate('/integrations')}>{t('scanForm.github.connectButton')}</Button>
               </div>
             ) : (
               <div className="relative">
@@ -198,13 +202,13 @@ export default function ScanForm() {
             {isRepo ? (
               ghConnected && (
                 repoOwned ? (
-                  <VerifiedBox text={`@${user?.githubLogin} 계정 소유로 확인됨`} />
+                  <VerifiedBox text={t('scanForm.repoOwnership.verified', { login: user?.githubLogin })} />
                 ) : repoOwner ? (
                   <div className="mt-4 rounded-xl bg-warning-soft px-4 py-3 flex items-center justify-between gap-3">
                     <span className="flex items-center gap-2 text-[13px] text-[#9a5b00]">
-                      <Icon name="alert-triangle" size={16} /> 이 레포는 @{user?.githubLogin} 소유가 아니에요. App 설치가 필요해요.
+                      <Icon name="alert-triangle" size={16} /> {t('scanForm.repoOwnership.notOwned', { login: user?.githubLogin })}
                     </span>
-                    <Button size="sm" variant="outline" onClick={() => navigate('/integrations')}>App 설치</Button>
+                    <Button size="sm" variant="outline" onClick={() => navigate('/integrations')}>{t('scanForm.repoOwnership.installButton')}</Button>
                   </div>
                 ) : null
               )
@@ -217,7 +221,7 @@ export default function ScanForm() {
 
             {!isRepo && (
               <>
-                <label className="block text-[13px] font-medium text-ink-sub mt-4 mb-2">결과 수신 이메일</label>
+                <label className="block text-[13px] font-medium text-ink-sub mt-4 mb-2">{t('scanForm.labels.email')}</label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-faint"><Icon name="mail" size={18} /></span>
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com"
@@ -230,19 +234,19 @@ export default function ScanForm() {
               <Icon name="info" size={15} />
               {isRepo ? (
                 <span>
-                  이번 달 SAST{' '}
+                  {t('scanForm.usage.sastPrefix')}{' '}
                   <span className={`font-semibold tnum ${noSastLeft ? 'text-danger' : 'text-brand'}`}>
-                    {wallet ? wallet.sourceLinesLeft.toLocaleString('ko-KR') : '—'}줄
+                    {wallet ? wallet.sourceLinesLeft.toLocaleString('ko-KR') : '—'}{t('scanForm.usage.sastUnit')}
                   </span>{' '}
-                  남음
+                  {t('scanForm.usage.sastSuffix')}
                 </span>
               ) : (
                 <span>
-                  DAST 스캔{' '}
+                  {t('scanForm.usage.dastPrefix')}{' '}
                   <Badge tone={noDastLeft ? 'danger' : 'brand'} size="sm" className="mx-0.5">
-                    {wallet ? `${wallet.dastAvailable}회` : '—'}
+                    {wallet ? t('scanForm.usage.dastCount', { count: wallet.dastAvailable }) : '—'}
                   </Badge>{' '}
-                  더 가능
+                  {t('scanForm.usage.dastSuffix')}
                 </span>
               )}
             </div>
@@ -251,9 +255,9 @@ export default function ScanForm() {
               <div className="mt-3 rounded-xl bg-danger-soft px-4 py-3 flex items-center justify-between gap-3">
                 <span className="flex items-center gap-2 text-[13px] text-danger">
                   <Icon name="alert-triangle" size={16} />
-                  {noDastLeft ? '이번 달 DAST 스캔 기회를 모두 사용했어요.' : 'SAST 사용 가능한 줄 수가 부족해요.'}
+                  {noDastLeft ? t('scanForm.warnings.dastExhausted') : t('scanForm.warnings.sastLow')}
                 </span>
-                <Button size="sm" variant="dark" onClick={() => navigate('/mypage')}>충전하기</Button>
+                <Button size="sm" variant="dark" onClick={() => navigate('/mypage')}>{t('scanForm.warnings.rechargeButton')}</Button>
               </div>
             )}
 
@@ -261,9 +265,9 @@ export default function ScanForm() {
               <div className="mt-3 rounded-xl bg-field border border-line px-4 py-3 flex items-start gap-2">
                 <span className="text-ink-faint mt-0.5"><Icon name="lock" size={15} /></span>
                 <p className="text-[12.5px] text-ink-sub leading-relaxed">
-                  <span className="font-semibold text-ink">프라이빗 레포도 검사할 수 있어요.</span> ScanOps App을 그 레포에 설치하면 돼요 —
-                  <button type="button" onClick={() => navigate('/integrations')} className="text-brand font-semibold hover:underline mx-1">App 설치</button>
-                  화면에서 <b>“Only select repositories”</b>를 골라 검사할 프라이빗 레포를 선택하세요.
+                  <span className="font-semibold text-ink">{t('scanForm.privateRepo.title')}</span> {t('scanForm.privateRepo.installHint')}
+                  <button type="button" onClick={() => navigate('/integrations')} className="text-brand font-semibold hover:underline mx-1">{t('scanForm.privateRepo.installButton')}</button>
+                  {t('scanForm.privateRepo.selectHint')} <b>“Only select repositories”</b>{t('scanForm.privateRepo.selectHint2')}
                 </p>
               </div>
             )}
@@ -275,7 +279,7 @@ export default function ScanForm() {
             )}
 
             <Button type="submit" size="lg" block loading={loading} className="mt-5" disabled={!canScan}>
-              {isRepo ? '레포 분석 시작하기' : '스캔 시작하기'}
+              {isRepo ? t('scanForm.submit.repoButton') : t('scanForm.submit.scanButton')}
             </Button>
           </form>
         )}
@@ -285,12 +289,13 @@ export default function ScanForm() {
 }
 
 function VerifiedBox({ text }: { text: string }) {
+  const { t } = useTranslation('scan')
   return (
     <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-success-soft px-4 py-3">
       <div className="flex items-center gap-2.5">
         <span className="text-success"><Icon name="check-circle" size={18} /></span>
         <div>
-          <p className="text-[13.5px] font-semibold text-ink">소유권 인증 완료</p>
+          <p className="text-[13.5px] font-semibold text-ink">{t('scanForm.verifiedBox.title')}</p>
           <p className="text-[12px] text-ink-sub">{text}</p>
         </div>
       </div>
@@ -309,22 +314,23 @@ function DomainVerify({
   onCheck: () => void
   onCopy: (t: string) => void
 }) {
+  const { t } = useTranslation('scan')
   if (!validUrl) {
     return (
       <div className="mt-4 flex items-center gap-2 rounded-xl bg-field px-4 py-3 text-[13px] text-ink-muted">
-        <Icon name="lock" size={15} /> 대상 URL을 입력하면 도메인 소유권 인증을 진행해요.
+        <Icon name="lock" size={15} /> {t('scanForm.domainVerify.enterUrlHint')}
       </div>
     )
   }
   if (vstate === 'verified') {
-    return <VerifiedBox text={selfScan ? 'ScanOps 자체 서비스 — 소유권 인증 생략됨' : '.well-known 파일로 도메인 소유 확인됨'} />
+    return <VerifiedBox text={selfScan ? t('scanForm.domainVerify.selfScanVerified') : t('scanForm.domainVerify.wellKnownVerified')} />
   }
 
   if (vstate === 'unverified') {
     return (
       <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-warning-soft px-4 py-3">
-        <span className="flex items-center gap-2 text-[13px] text-[#9a5b00]"><Icon name="alert-triangle" size={16} /> 도메인 소유권 인증이 필요해요.</span>
-        <Button size="sm" variant="dark" onClick={onStart}>인증하기</Button>
+        <span className="flex items-center gap-2 text-[13px] text-[#9a5b00]"><Icon name="alert-triangle" size={16} /> {t('scanForm.domainVerify.required')}</span>
+        <Button size="sm" variant="dark" onClick={onStart}>{t('scanForm.domainVerify.startButton')}</Button>
       </div>
     )
   }
@@ -333,44 +339,45 @@ function DomainVerify({
   const filePath = vinfo?.path ?? '/.well-known/scanops-verify.txt'
   const token = vinfo?.token ?? '…'
   const publicPath = `public${filePath}`
-  const verifyUrl = `https://${vinfo?.domain ?? '도메인'}${filePath}`
-  const aiPrompt = `프로젝트의 public 폴더 안에 .well-known/scanops-verify.txt 파일을 만들고, 그 안에 정확히 "${token}" 한 줄만 넣어줘. 그리고 배포해줘.`
+  const verifyUrl = `https://${vinfo?.domain ?? t('scanForm.domainVerify.domainFallback')}${filePath}`
+  const aiPrompt = t('scanForm.domainVerify.aiPrompt', { token })
   return (
     <div className="mt-4 rounded-xl border border-line bg-surface p-5">
-      <p className="text-[13.5px] font-bold text-ink mb-1 flex items-center gap-1.5"><Icon name="file-text" size={15} /> 도메인 소유권 인증 — 순서대로 따라 하기</p>
-      <p className="text-[12px] text-ink-muted mb-4">내 사이트가 진짜 내 것임을 확인하는 단계예요. 아래 3단계만 하면 끝나요.</p>
+      <p className="text-[13.5px] font-bold text-ink mb-1 flex items-center gap-1.5"><Icon name="file-text" size={15} /> {t('scanForm.domainVerify.stepsTitle')}</p>
+      <p className="text-[12px] text-ink-muted mb-4">{t('scanForm.domainVerify.stepsSubtitle')}</p>
       <div className="flex flex-col gap-4">
-        <Step n={1} title="인증 파일을 만드세요">
+        <Step n={1} title={t('scanForm.domainVerify.step1.title')}>
           <p className="text-[12.5px] text-ink-muted mb-2 leading-relaxed">
-            내 프로젝트의 <code className="px-1 py-0.5 rounded bg-field text-ink-sub font-mono text-[11.5px]">public</code> 폴더 안에
-            아래 경로 그대로 파일을 새로 만드세요.
-            <br />Next.js·Vite·React·바이브코딩 템플릿 모두 <code className="px-1 py-0.5 rounded bg-field text-ink-sub font-mono text-[11.5px]">public/</code> 안의 파일을 사이트 주소 그대로 보여줘요.
+            {t('scanForm.domainVerify.step1.textBeforeCode1')} <code className="px-1 py-0.5 rounded bg-field text-ink-sub font-mono text-[11.5px]">public</code>{' '}
+            {t('scanForm.domainVerify.step1.textAfterCode1')}
+            <br />{t('scanForm.domainVerify.step1.textBeforeCode2')} <code className="px-1 py-0.5 rounded bg-field text-ink-sub font-mono text-[11.5px]">public/</code>{' '}
+            {t('scanForm.domainVerify.step1.textAfterCode2')}
           </p>
           <CodeCopy value={publicPath} onCopy={onCopy} />
         </Step>
-        <Step n={2} title="그 파일 안에 이 토큰 한 줄만 붙여넣고 저장하세요">
+        <Step n={2} title={t('scanForm.domainVerify.step2.title')}>
           <CodeCopy value={token} onCopy={onCopy} mono />
         </Step>
-        <Step n={3} title="배포(deploy)한 뒤, 이 주소가 열리는지 확인하세요">
+        <Step n={3} title={t('scanForm.domainVerify.step3.title')}>
           <a href={verifyUrl} target="_blank" rel="noreferrer"
             className="inline-flex items-center gap-1.5 text-[12.5px] text-brand font-medium hover:underline break-all">
             {verifyUrl} <Icon name="external-link" size={13} />
           </a>
-          <p className="text-[12px] text-ink-muted mt-1">화면에 위 토큰이 그대로 보이면 준비 완료예요.</p>
+          <p className="text-[12px] text-ink-muted mt-1">{t('scanForm.domainVerify.step3.hint')}</p>
         </Step>
       </div>
 
       {/* 바이브코더용 — AI에게 그대로 시키기 */}
       <div className="mt-4 rounded-lg bg-field border border-line p-3">
         <p className="text-[12px] font-semibold text-ink-sub mb-1.5 flex items-center gap-1.5">
-          <Icon name="zap" size={13} /> 직접 만들기 어렵다면, Cursor·v0·Lovable 같은 AI에게 이렇게 말하세요
+          <Icon name="zap" size={13} /> {t('scanForm.domainVerify.aiHelperTitle')}
         </p>
         <CodeCopy value={aiPrompt} onCopy={onCopy} />
       </div>
 
       <div className="mt-4 pt-3.5 border-t border-line flex items-center gap-2.5">
-        <Button size="sm" onClick={onCheck} loading={vstate === 'checking'} leftIcon="refresh-cw">인증 확인</Button>
-        <span className="text-[12px] text-ink-muted">배포가 끝난 뒤 눌러주세요</span>
+        <Button size="sm" onClick={onCheck} loading={vstate === 'checking'} leftIcon="refresh-cw">{t('scanForm.domainVerify.checkButton')}</Button>
+        <span className="text-[12px] text-ink-muted">{t('scanForm.domainVerify.checkHint')}</span>
       </div>
     </div>
   )
@@ -389,10 +396,11 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
 }
 
 function CodeCopy({ value, onCopy, mono }: { value: string; onCopy: (t: string) => void; mono?: boolean }) {
+  const { t } = useTranslation('scan')
   return (
     <div className="flex items-center gap-2">
       <code className={`flex-1 min-w-0 truncate rounded-lg bg-white border border-line px-3 py-2 text-[12.5px] text-ink-sub ${mono ? 'font-mono' : 'font-mono'}`}>{value}</code>
-      <button type="button" onClick={() => onCopy(value)} className="w-9 h-9 rounded-lg border border-line bg-white flex items-center justify-center text-ink-muted hover:text-ink shrink-0" aria-label="복사">
+      <button type="button" onClick={() => onCopy(value)} className="w-9 h-9 rounded-lg border border-line bg-white flex items-center justify-center text-ink-muted hover:text-ink shrink-0" aria-label={t('scanForm.copy.ariaLabel')}>
         <Icon name="copy" size={15} />
       </button>
     </div>

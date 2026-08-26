@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useTour } from '../lib/tour'
 import Icon from './Icon'
 
@@ -8,6 +9,7 @@ const PAD = 8
 
 /** Full-screen guided tour: blurred/dimmed backdrop with a live "cutout" around the target element. */
 export default function TourOverlay() {
+  const { t } = useTranslation('common')
   const { active, stepIndex, steps, next, prev, skip } = useTour()
   const step = steps[stepIndex]
   const [rect, setRect] = useState<Rect | null>(null)
@@ -106,25 +108,25 @@ export default function TourOverlay() {
       >
         <div className="flex items-center justify-between mb-2.5">
           <span className="text-[11.5px] font-bold text-brand">{stepIndex + 1} / {steps.length}</span>
-          <button onClick={skip} className="text-ink-faint hover:text-ink-sub -m-1 p-1" aria-label="가이드 닫기">
+          <button onClick={skip} className="text-ink-faint hover:text-ink-sub -m-1 p-1" aria-label={t('tourOverlay.closeGuide')}>
             <Icon name="x" size={16} />
           </button>
         </div>
-        <h3 className="text-[15.5px] font-bold text-ink">{step.title}</h3>
-        <p className="mt-1.5 text-[13.5px] text-ink-sub leading-relaxed">{step.desc}</p>
+        <h3 className="text-[15.5px] font-bold text-ink">{t(step.titleKey)}</h3>
+        <p className="mt-1.5 text-[13.5px] text-ink-sub leading-relaxed">{t(step.descKey)}</p>
 
         <div className="mt-4 flex items-center gap-2">
           {stepIndex > 0 ? (
             <button onClick={prev} className="flex-1 h-9 rounded-lg border border-line text-[13px] font-semibold text-ink-sub hover:bg-surface transition-colors">
-              이전
+              {t('tourOverlay.previous')}
             </button>
           ) : (
             <button onClick={skip} className="flex-1 h-9 rounded-lg text-[13px] font-medium text-ink-muted hover:text-ink-sub transition-colors">
-              건너뛰기
+              {t('tourOverlay.skip')}
             </button>
           )}
           <button onClick={next} className="flex-1 h-9 rounded-lg bg-brand text-white text-[13px] font-semibold hover:bg-brand-hover transition-colors">
-            {stepIndex + 1 >= steps.length ? '시작하기' : '다음'}
+            {stepIndex + 1 >= steps.length ? t('tourOverlay.start') : t('tourOverlay.next')}
           </button>
         </div>
       </div>

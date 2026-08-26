@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { Vulnerability } from '../../../entities/vulnerability/model/types'
 
 interface Props {
@@ -12,14 +13,15 @@ const RISK_COLOR: Record<string, string> = {
 }
 
 export default function VulnTable({ vulnerabilities }: Props) {
+  const { t } = useTranslation('common')
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-gray-400 border-b border-gray-700">
-            <th className="pb-3 pr-4">유형</th>
+            <th className="pb-3 pr-4">{t('vulnTable.type')}</th>
             <th className="pb-3 pr-4">URL</th>
-            <th className="pb-3 pr-4">위험도</th>
+            <th className="pb-3 pr-4">{t('vulnTable.severity')}</th>
             <th className="pb-3">CVSS</th>
           </tr>
         </thead>

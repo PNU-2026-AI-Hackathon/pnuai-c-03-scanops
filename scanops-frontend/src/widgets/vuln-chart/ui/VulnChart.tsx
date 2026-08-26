@@ -1,4 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { useTranslation } from 'react-i18next'
 import type { Vulnerability } from '../../../entities/vulnerability/model/types'
 
 interface Props {
@@ -6,6 +7,7 @@ interface Props {
 }
 
 export default function VulnChart({ vulnerabilities }: Props) {
+  const { t } = useTranslation('common')
   const counts = vulnerabilities.reduce<Record<string, number>>((acc, v) => {
     acc[v.riskLevel] = (acc[v.riskLevel] ?? 0) + 1
     return acc
@@ -25,7 +27,7 @@ export default function VulnChart({ vulnerabilities }: Props) {
 
   return (
     <div className="bg-gray-800 rounded-lg p-5">
-      <h3 className="text-sm text-gray-400 mb-4">위험도별 취약점 수</h3>
+      <h3 className="text-sm text-gray-400 mb-4">{t('vulnChart.title')}</h3>
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={data}>
           <XAxis dataKey="name" stroke="#6b7280" tick={{ fontSize: 12 }} />

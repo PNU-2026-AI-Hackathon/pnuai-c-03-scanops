@@ -1,4 +1,5 @@
 import { forwardRef, useState, type InputHTMLAttributes } from 'react'
+import { useTranslation } from 'react-i18next'
 import Icon, { type IconName } from './Icon'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -14,6 +15,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   { label, hint, error, leftIcon, reveal, type = 'text', className = '', ...rest },
   ref,
 ) {
+  const { t } = useTranslation('common')
   const [show, setShow] = useState(false)
   const inputType = reveal ? (show ? 'text' : 'password') : type
 
@@ -42,7 +44,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             type="button"
             onClick={() => setShow((s) => !s)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-sub"
-            aria-label={show ? '비밀번호 숨기기' : '비밀번호 표시'}
+            aria-label={show ? t('input.hidePassword') : t('input.showPassword')}
           >
             <Icon name={show ? 'eye-off' : 'eye'} size={18} />
           </button>

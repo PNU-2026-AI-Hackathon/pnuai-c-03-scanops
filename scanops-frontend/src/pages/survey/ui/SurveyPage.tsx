@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import Icon from '../../../shared/ui/Icon'
 import { useAuth } from '../../../shared/lib/auth'
 import { completeSurvey, fetchSurveyStatus, submitSurvey } from '../../../shared/api/survey'
@@ -7,21 +8,16 @@ import { completeSurvey, fetchSurveyStatus, submitSurvey } from '../../../shared
 type StepType = 'intro' | 'single' | 'text' | 'done'
 type Answers = Record<string, string>
 
-interface Option { v: string; label: string }
+interface Option { v: string }
 interface FollowUp {
   id: string
-  placeholder: string
   /** 생략하면 옵션 아무거나 골라도 나타남(예/아니오 둘 다 이유를 묻는 경우). */
   trigger?: string[]
 }
 interface Step {
   id: string
   type: StepType
-  eyebrow?: string
-  title?: string
-  sub?: string
   options?: Option[]
-  placeholder?: string
   followUp?: FollowUp
   /** 다른 답변에 따라 이 스텝 자체를 건너뛸지. */
   when?: (a: Answers) => boolean
@@ -29,96 +25,81 @@ interface Step {
 
 const QUESTIONS: Step[] = [
   {
-    id: 'priorToolUsed', type: 'single', eyebrow: '경험',
-    title: 'ScanOps 이외의 보안 점검 서비스를\n이용해보신 적이 있으신가요?',
-    options: [{ v: '없다', label: '없다' }, { v: '있다', label: '있다' }],
-    followUp: { id: 'priorToolWhat', placeholder: '어떤 서비스를 쓰셨었나요?', trigger: ['있다'] },
+    id: 'priorToolUsed', type: 'single',
+    options: [{ v: '없다' }, { v: '있다' }],
+    followUp: { id: 'priorToolWhat', trigger: ['있다'] },
   },
   {
-    id: 'comparisonVsPrior', type: 'text', eyebrow: '비교',
-    title: '이전에 쓰던 서비스와 비교했을 때\nScanOps가 더 낫거나 아쉬웠던 점은?',
-    placeholder: '자유롭게 적어주세요',
+    id: 'comparisonVsPrior', type: 'text',
     when: (a) => a.priorToolUsed === '있다',
   },
   {
-    id: 'purpose', type: 'single', eyebrow: '목적',
-    title: '보안 점검 서비스를 사용한다면\n무슨 목적으로 쓰시나요 / 쓰실 예정인가요?',
+    id: 'purpose', type: 'single',
     options: [
-      { v: '배포전점검', label: '서비스 배포 전 점검용' },
-      { v: '실서비스보안점검', label: '실서비스 보안 점검용 사용' },
-      { v: '개인깃허브점검', label: '개인 GitHub 보안 점검용' },
+      { v: '배포전점검' },
+      { v: '실서비스보안점검' },
+      { v: '개인깃허브점검' },
     ],
   },
   {
-    id: 'role', type: 'single', eyebrow: '역할',
-    title: '팀이라면 팀 내에서\n어떤 역할이신가요?',
+    id: 'role', type: 'single',
     options: [
-      { v: '개발자', label: '개발자' },
-      { v: 'CTO', label: 'CTO' },
-      { v: '기획자', label: '기획자' },
-      { v: '보안담당자', label: '보안담당자' },
-      { v: '디자이너', label: '디자이너' },
-      { v: '기타', label: '기타' },
+      { v: '개발자' },
+      { v: 'CTO' },
+      { v: '기획자' },
+      { v: '보안담당자' },
+      { v: '디자이너' },
+      { v: '기타' },
     ],
-    followUp: { id: 'roleOther', placeholder: '역할을 적어주세요', trigger: ['기타'] },
+    followUp: { id: 'roleOther', trigger: ['기타'] },
   },
   {
-    id: 'reportClarity', type: 'single', eyebrow: '리포트',
-    title: '스캔 리포트(결과 화면)를\n이해하기 쉬웠나요?',
+    id: 'reportClarity', type: 'single',
     options: [
-      { v: '매우쉬움', label: '매우 쉬움' },
-      { v: '쉬움', label: '쉬움' },
-      { v: '보통', label: '보통' },
-      { v: '어려움', label: '어려움' },
-      { v: '매우어려움', label: '매우 어려움' },
+      { v: '매우쉬움' },
+      { v: '쉬움' },
+      { v: '보통' },
+      { v: '어려움' },
+      { v: '매우어려움' },
     ],
   },
   {
-    id: 'falsePositive', type: 'single', eyebrow: '오탐',
-    title: '발견된 취약점 중, 실제로는 문제가 아니라고\n판단한(오탐이라고 느낀) 경우가 있었나요?',
-    options: [{ v: '없다', label: '없다' }, { v: '있다', label: '있다' }],
-    followUp: { id: 'falsePositiveDetail', placeholder: '어떤 부분이 오탐이라고 느끼셨나요?', trigger: ['있다'] },
+    id: 'falsePositive', type: 'single',
+    options: [{ v: '없다' }, { v: '있다' }],
+    followUp: { id: 'falsePositiveDetail', trigger: ['있다'] },
   },
   {
-    id: 'continueIntent', type: 'single', eyebrow: '지속 의향',
-    title: '베타 테스트가 끝나도\nScanOps를 계속 사용하실 의향이 있으신가요?',
-    options: [{ v: '예', label: '예' }, { v: '아니오', label: '아니오' }],
-    followUp: { id: 'continueReason', placeholder: '이유를 알려주세요' },
+    id: 'continueIntent', type: 'single',
+    options: [{ v: '예' }, { v: '아니오' }],
+    followUp: { id: 'continueReason' },
   },
   {
-    id: 'recommendIntent', type: 'single', eyebrow: '추천 의향',
-    title: '동료 개발자에게\nScanOps를 추천할 의향이 있나요?',
+    id: 'recommendIntent', type: 'single',
     options: [
-      { v: '전혀아니다', label: '전혀 아니다' },
-      { v: '고민된다', label: '고민된다' },
-      { v: '추천하겠다', label: '추천하겠다' },
+      { v: '전혀아니다' },
+      { v: '고민된다' },
+      { v: '추천하겠다' },
     ],
   },
   {
-    id: 'likedPoints', type: 'text', eyebrow: '의견',
-    title: 'ScanOps의 어떤 점이\n마음에 드셨나요?',
-    placeholder: '자유롭게 적어주세요',
+    id: 'likedPoints', type: 'text',
   },
   {
-    id: 'wishFeature', type: 'text', eyebrow: '제안',
-    title: 'ScanOps를 구독한다면, 추가되었으면 하는 기능이나\n개선되었으면 하는 점이 있나요?',
-    placeholder: '자유롭게 적어주세요',
+    id: 'wishFeature', type: 'text',
   },
   {
-    id: 'missedVuln', type: 'single', eyebrow: '탐지',
-    title: '이미 알고 있던 취약점 중\nScanOps에서 탐지하지 못한 경우가 있었나요?',
-    options: [{ v: '없다', label: '없다' }, { v: '있다', label: '있다' }],
-    followUp: { id: 'missedVulnDetail', placeholder: '어떤 취약점이었나요?', trigger: ['있다'] },
+    id: 'missedVuln', type: 'single',
+    options: [{ v: '없다' }, { v: '있다' }],
+    followUp: { id: 'missedVulnDetail', trigger: ['있다'] },
   },
   {
-    id: 'scanSpeed', type: 'single', eyebrow: '속도',
-    title: '스캔 속도에 대해\n만족하시나요?',
+    id: 'scanSpeed', type: 'single',
     options: [
-      { v: '매우느림', label: '매우 느림' },
-      { v: '느린편', label: '느린 편' },
-      { v: '적당함', label: '적당함' },
-      { v: '빠른편', label: '빠른 편' },
-      { v: '매우빠름', label: '매우 빠름' },
+      { v: '매우느림' },
+      { v: '느린편' },
+      { v: '적당함' },
+      { v: '빠른편' },
+      { v: '매우빠름' },
     ],
   },
 ]
@@ -137,6 +118,7 @@ function clientId() {
 }
 
 export default function SurveyPage() {
+  const { t } = useTranslation('survey')
   const navigate = useNavigate()
   const { user } = useAuth()
   const [i, setI] = useState(0)
@@ -199,7 +181,7 @@ export default function SurveyPage() {
         <div className="sticky top-0 z-10 bg-field px-5 pt-2">
           <div className="h-11 flex items-center">
             {i > 0 && step.type !== 'done' && (
-              <button onClick={back} aria-label="이전" className="w-8 h-8 -ml-1.5 flex items-center justify-center text-ink">
+              <button onClick={back} aria-label={t('back')} className="w-8 h-8 -ml-1.5 flex items-center justify-center text-ink">
                 <Icon name="chevron-left" size={22} />
               </button>
             )}
@@ -242,16 +224,17 @@ export default function SurveyPage() {
 }
 
 function IntroView({ onStart }: { onStart: () => void }) {
+  const { t } = useTranslation('survey')
   return (
     <div className="flex-1 flex flex-col items-center justify-center text-center px-2 py-10 min-h-[70vh]">
       <div className="w-[72px] h-[72px] rounded-[22px] bg-brand flex items-center justify-center mb-6 shadow-[0_8px_24px_rgba(49,130,246,.35)]">
         <Icon name="edit-3" size={32} className="text-white" />
       </div>
       <h1 className="text-[26px] font-extrabold text-ink leading-snug tracking-tight">
-        1분이면 끝나요.<br />베타 사용 경험을 들려주세요!
+        {t('intro.titleLine1')}<br />{t('intro.titleLine2')}
       </h1>
       <p className="mt-3 text-[15px] text-ink-muted leading-relaxed">
-        ScanOps를 더 잘 만들기 위한 짧은 설문이에요.<br />정답은 없어요.
+        {t('intro.subtitleLine1')}<br />{t('intro.subtitleLine2')}
       </p>
 
       <div className="w-full mt-6 rounded-2xl bg-danger-soft border border-danger-soft px-5 py-4 flex items-center gap-3.5 text-left">
@@ -259,45 +242,46 @@ function IntroView({ onStart }: { onStart: () => void }) {
           <Icon name="zap" size={20} />
         </span>
         <div>
-          <p className="text-[17px] font-bold text-danger">설문 끝까지 완료하면</p>
+          <p className="text-[17px] font-bold text-danger">{t('intro.rewardTitle')}</p>
           <p className="text-[13px] text-ink-sub leading-relaxed mt-0.5">
-            정식 출시 때 <b className="text-ink font-bold">SAST 토큰 3만 줄</b>을 지급해드려요.
+            {t('intro.rewardPre')}<b className="text-ink font-bold">{t('intro.rewardBold')}</b>{t('intro.rewardSuffix')}
           </p>
         </div>
       </div>
 
       <div className="inline-flex items-center gap-1.5 bg-white rounded-full px-3.5 py-2 text-[13px] font-semibold text-ink-sub mt-5">
-        ⏱ 약 1분 · 11문항
+        {t('intro.meta')}
       </div>
       <button
         onClick={onStart}
         className="mt-10 w-full h-[54px] rounded-2xl bg-brand text-white text-[17px] font-bold hover:bg-brand-hover active:scale-[.99] transition-all"
       >
-        설문 시작하기
+        {t('intro.start')}
       </button>
     </div>
   )
 }
 
 function DoneView({ submitting, onExit }: { submitting: boolean; onExit: () => void }) {
+  const { t } = useTranslation('survey')
   return (
     <div className="flex-1 flex flex-col items-center justify-center text-center px-2 py-10 min-h-[70vh]">
       <div className="w-[72px] h-[72px] rounded-[22px] bg-brand flex items-center justify-center mb-6 shadow-[0_8px_24px_rgba(49,130,246,.35)]">
         <Icon name="check" size={34} className="text-white" strokeWidth={3} />
       </div>
       <h1 className="text-[24px] font-extrabold text-ink leading-snug tracking-tight">
-        설문이 끝났어요!<br />고맙습니다 🙏
+        {t('done.titleLine1')}<br />{t('done.titleLine2')}
       </h1>
       <p className="mt-3 text-[15px] text-ink-muted leading-relaxed">
-        들려주신 이야기로 ScanOps를<br />더 쓸모 있게 만들게요.<br />
-        정식 출시 때 SAST 토큰 3만 줄을 챙겨드릴게요.
+        {t('done.descLine1')}<br />{t('done.descLine2')}<br />
+        {t('done.descLine3')}
       </p>
       <button
         onClick={onExit}
         disabled={submitting}
         className="mt-10 w-full h-[54px] rounded-2xl bg-brand text-white text-[17px] font-bold hover:bg-brand-hover active:scale-[.99] transition-all disabled:opacity-60"
       >
-        마이페이지로 돌아가기
+        {t('done.exit')}
       </button>
     </div>
   )
@@ -312,11 +296,12 @@ function SingleView({ step, value, followUpValue, onPick, onFollowUpChange, onCo
   onContinue: () => void
   isLast: boolean
 }) {
+  const { t } = useTranslation('survey')
   const showFollowUp = !!step.followUp && !!value && (!step.followUp.trigger || step.followUp.trigger.includes(value))
   return (
     <div>
-      <p className="text-[13px] font-semibold text-brand mb-2.5">{step.eyebrow}</p>
-      <h1 className="text-[22px] font-bold text-ink leading-snug mb-6 whitespace-pre-line">{step.title}</h1>
+      <p className="text-[13px] font-semibold text-brand mb-2.5">{t(`questions.${step.id}.eyebrow`)}</p>
+      <h1 className="text-[22px] font-bold text-ink leading-snug mb-6 whitespace-pre-line">{t(`questions.${step.id}.title`)}</h1>
       <div className="flex flex-col gap-2.5">
         {step.options!.map((o) => {
           const selected = value === o.v
@@ -328,7 +313,7 @@ function SingleView({ step, value, followUpValue, onPick, onFollowUpChange, onCo
                 selected ? 'bg-brand-soft border-brand text-brand-press' : 'bg-white border-white text-ink'
               }`}
             >
-              {o.label}
+              {t(`questions.${step.id}.options.${o.v}`)}
               <span
                 className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
                   selected ? 'bg-brand border-brand' : 'border-line-strong'
@@ -345,7 +330,7 @@ function SingleView({ step, value, followUpValue, onPick, onFollowUpChange, onCo
         <textarea
           value={followUpValue}
           onChange={(e) => onFollowUpChange(e.target.value)}
-          placeholder={step.followUp!.placeholder}
+          placeholder={t(`questions.${step.id}.followUpPlaceholder`)}
           rows={3}
           className="w-full mt-3 rounded-2xl bg-white border border-line px-4 py-3.5 text-[15px] text-ink placeholder:text-ink-faint outline-none focus:border-brand transition-colors resize-none"
         />
@@ -357,7 +342,7 @@ function SingleView({ step, value, followUpValue, onPick, onFollowUpChange, onCo
           disabled={showFollowUp && !followUpValue.trim()}
           className="mt-4 w-full h-[54px] rounded-2xl bg-brand text-white text-[17px] font-bold hover:bg-brand-hover active:scale-[.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
         >
-          {isLast ? '제출하기' : '다음'}
+          {isLast ? t('submit') : t('next')}
         </button>
       )}
     </div>
@@ -367,14 +352,15 @@ function SingleView({ step, value, followUpValue, onPick, onFollowUpChange, onCo
 function TextView({ step, value, onChange, onNext, isLast }: {
   step: Step; value: string; onChange: (v: string) => void; onNext: () => void; isLast: boolean
 }) {
+  const { t } = useTranslation('survey')
   return (
     <div className="flex flex-col h-full">
-      <p className="text-[13px] font-semibold text-brand mb-2.5">{step.eyebrow}</p>
-      <h1 className="text-[22px] font-bold text-ink leading-snug mb-6 whitespace-pre-line">{step.title}</h1>
+      <p className="text-[13px] font-semibold text-brand mb-2.5">{t(`questions.${step.id}.eyebrow`)}</p>
+      <h1 className="text-[22px] font-bold text-ink leading-snug mb-6 whitespace-pre-line">{t(`questions.${step.id}.title`)}</h1>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={step.placeholder}
+        placeholder={t(`questions.${step.id}.placeholder`)}
         rows={5}
         className="w-full rounded-2xl bg-white border border-line px-4 py-3.5 text-[15px] text-ink placeholder:text-ink-faint outline-none focus:border-brand transition-colors resize-none"
       />
@@ -384,7 +370,7 @@ function TextView({ step, value, onChange, onNext, isLast }: {
           disabled={!value.trim()}
           className="w-full h-[54px] rounded-2xl bg-brand text-white text-[17px] font-bold hover:bg-brand-hover active:scale-[.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
         >
-          {isLast ? '제출하기' : '다음'}
+          {isLast ? t('submit') : t('next')}
         </button>
       </div>
     </div>
